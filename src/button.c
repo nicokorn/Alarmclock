@@ -40,12 +40,18 @@ void init_buttons(){
 	/* init button gpio */
 	__HAL_RCC_GPIOB_CLK_ENABLE();																	//enable clock on the bus
 	GPIO_InitTypeDef GPIO_InitStruct_Button;
-	GPIO_InitStruct_Button.Pin = 	BUTTON_MODE || BUTTON_PLUS || BUTTON_MINUS || BUTTON_SNOOZE; 	// select pin 1,2,3,13
-	GPIO_InitStruct_Button.Mode = 	GPIO_MODE_IT_RISING; 											// configure pins for pp o,utput
+	GPIO_InitStruct_Button.Pin = 	BUTTON_MODE | BUTTON_PLUS | BUTTON_MINUS | BUTTON_SNOOZE; 	// select pin 1,2,3,13
+	GPIO_InitStruct_Button.Mode = 	GPIO_MODE_IT_FALLING; 											// configure pins for pp o,utput
 	GPIO_InitStruct_Button.Pull = 	GPIO_NOPULL;													// state clear because line either set up to 3.3V or down to GND
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct_Button);													// setting GPIO registers
 
 	/* Enable and set EXTI lines Interrupt */
-	HAL_NVIC_SetPriority(EXTI0_IRQn || EXTI1_IRQn || EXTI2_IRQn || EXTI15_10_IRQn, 0, 0);
-	HAL_NVIC_EnableIRQ(EXTI0_IRQn || EXTI1_IRQn || EXTI2_IRQn || EXTI15_10_IRQn);
+	HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+	HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+	HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 }

@@ -30,21 +30,20 @@
 #include "main.h"
 
 /* defines */
-#define SETUP_BLINKING_PERIOD	1000 // in ms
-#define BUZZER_BUZZ_PERIOD		1000 // in ms
+#define BUZZER_BUZZ_PERIOD			1000 // in ms
+#define EVENT_QUEUE_LENGTH			11 // length of event buffer
 
 /* variables */
-extern uint8_t 			WS2812_TC;							// led transmission flag
-static uint8_t 			red,green,blue;						// led color
-static Wordclock_Mode 	mode, read_mode, old_read_mode;		// mode states for the fsm
+static uint16_t			event_queue[EVENT_QUEUE_LENGTH];
+static uint16_t			queue_index;
+static Queue_Lock		queue_lock;
+static Alarmclock		alarmclock;
 
 /* function prototypes */
 void SystemClock_Config(void);
-void refresh_clock_display(void);
-void alarm_lock(FunctionalState state);
-void setup_blinking(Wordclock_Mode mode);
-void get_preferences(uint8_t *red, uint8_t *green, uint8_t *blue);
-void set_preferences(uint8_t *red, uint8_t *green, uint8_t *blue);
+uint16_t unqeue_next_event();
+void init_event_queue();
+
 
 /**
   * @brief  Main program
@@ -78,288 +77,160 @@ int main(void){
 	init_buzzer(BUZZER_BUZZ_PERIOD);
 
 	/* initialize lightsensor */
-	init_lightsensor();
+	//init_lightsensor();
 
-	/* load color preferences from the BKP register */
-	get_preferences(&red, &green, &blue);
+	/* initialize RTC and init mode */
+	init_clock(&alarmclock);
 
-	/* initialize clock (also load time information from BKP register) */
-	init_clock();
-
-	/* init system mode */
-	mode = MODE_TIME_CLOCK;
+	/* init event queue with end flag */
+	init_event_queue();
 
 	/* test leds */
 	WS2812_led_test();
 
 	while (1){
-		/* read last valid mode - needs to be read here to save synchronized behavior */
-		read_mode = mode;
+		/* check for new events */
+		alarmclock.event = unqeue_next_event();
 		/* finite state machine */
-		switch(read_mode){
-			case MODE_TIME_CLOCK:			/* unlock alarm */
-											alarm_lock(UNLOCKED);
-											/* refresh clock */
-											refresh_clock_display();
-											read_mode = MODE_TIME_CLOCK;
+		switch(alarmclock.mode){
+			case MODE_TIME_CLOCK:			switch(alarmclock.event){
+												case BUTTON_MODE:	increment_mode(&alarmclock);
+												break;
+												case BUTTON_PLUS:	increment_clock_color(&alarmclock);
+																	set_clock_preferences(&alarmclock);	// set preferences
+												break;
+												case BUTTON_MINUS:	decrement_clock_color(&alarmclock);
+																	set_clock_preferences(&alarmclock);	// set preferences
+												break;
+												case BUTTON_SNOOZE: buzzer_stop();
+												break;
+												case SWITCH_ALARM:;
+												break;
+											}
+											refresh_clock_display(&alarmclock);		// refresh clock
 			break;
-			case MODE_TIME_SET_CLOCK_h:		/* lock alarm */
-											alarm_lock(LOCKED);
-											/* let the hours blink */
-											setup_blinking(read_mode);
-											read_mode = MODE_TIME_SET_CLOCK_h;
+			case MODE_TIME_SET_CLOCK_h:		switch(alarmclock.event){
+												case BUTTON_MODE:	increment_mode(&alarmclock);
+												break;
+												case BUTTON_PLUS:	led_clock_hour_plus(&alarmclock);
+												break;
+												case BUTTON_MINUS:	led_clock_hour_minus(&alarmclock);
+												break;
+												case BUTTON_SNOOZE:	buzzer_stop();
+												break;
+												case SWITCH_ALARM:;
+												break;
+											}
+											setup_clock_blinking(&alarmclock);			// let the hours blink
 			break;
-			case MODE_TIME_SET_CLOCK_min:	/* lock alarm */
-											alarm_lock(LOCKED);
-											/* let the minutes blink */
-											setup_blinking(read_mode);
-											read_mode = MODE_TIME_SET_CLOCK_min;
+			case MODE_TIME_SET_CLOCK_min:	switch(alarmclock.event){
+												case BUTTON_MODE:	increment_mode(&alarmclock);
+												break;
+												case BUTTON_PLUS:	led_clock_minute_plus(&alarmclock);
+												break;
+												case BUTTON_MINUS:	led_clock_minute_minus(&alarmclock);
+												break;
+												case BUTTON_SNOOZE:	buzzer_stop();
+												break;
+												case SWITCH_ALARM:;
+												break;
+											}
+											setup_clock_blinking(&alarmclock);		// let the minutes blink
 			break;
-			case MODE_TIME_SET_ALARM_h:		/* lock alarm */
-											alarm_lock(LOCKED);
-											/*let the hours blink*/
-											setup_blinking(read_mode);
-											read_mode = MODE_TIME_SET_ALARM_h;
+			case MODE_TIME_SET_ALARM_h:		switch(alarmclock.event){
+												case BUTTON_MODE:	increment_mode(&alarmclock);
+												break;
+												case BUTTON_PLUS:	led_alarm_hour_plus(&alarmclock);
+																	set_clock_preferences(&alarmclock);	// set preferences
+												break;
+												case BUTTON_MINUS:	led_alarm_hour_minus(&alarmclock);
+																	set_clock_preferences(&alarmclock);	// set preferences
+												break;
+												case BUTTON_SNOOZE:	buzzer_stop();
+												break;
+												case SWITCH_ALARM:;
+												break;
+											}
+											setup_clock_blinking(&alarmclock);		// let the hours blink
 			break;
-			case MODE_TIME_SET_ALARM_min:	/* lock alarm */
-											alarm_lock(LOCKED);
-											/* let the minutes blink */
-											setup_blinking(read_mode);
-											read_mode = MODE_TIME_SET_ALARM_min;
+			case MODE_TIME_SET_ALARM_min:	switch(alarmclock.event){
+												case BUTTON_MODE:	increment_mode(&alarmclock);
+												break;
+												case BUTTON_PLUS:	led_alarm_minute_plus(&alarmclock);
+																	set_clock_preferences(&alarmclock);	// set preferences
+												break;
+												case BUTTON_MINUS:	led_alarm_minute_minus(&alarmclock);
+																	set_clock_preferences(&alarmclock);	// set preferences
+												break;
+												case BUTTON_SNOOZE:	buzzer_stop();
+												break;
+												case SWITCH_ALARM:;
+												break;
+											}
+											setup_clock_blinking(&alarmclock);		// let the minutes blink
 			break;
 		}
+		HAL_Delay(100);
 	}
-	/* get ambient light to control led light strength */
-	// to do
-	/* save recent mode into old mode, to detect further mode changes */
-	old_read_mode = read_mode;
-	/* wait 1 ms */
-	HAL_Delay(1);
 }
 
-/* Callback functions for the interrupts -------------------------------------*/
+/* Callback function for the interrupts */
 /**
  * @brief EXTI line detection callbacks.
  * @param GPIO_Pin: Specifies the pins connected EXTI line
  * @retval None
  */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
-	/* functional part of the finite state machine, graphical part is implemented in the main routine */
-	switch(mode){
-		/* normal clock mode with displaying time, ability to change color, snooze alarm and switch on/off alarm */
-		case MODE_TIME_CLOCK:			switch(GPIO_Pin){
-											case BUTTON_MODE: 	/* set next mode */
-																mode++;
-											break;
-											case BUTTON_PLUS:	/* color up */
-																WS2812_color_wheel_plus(&red, &green, &blue);
-											break;
-											case BUTTON_MINUS:	/* color down */
-																WS2812_color_wheel_minus(&red, &green, &blue);
-											break;
-											case BUTTON_SNOOZE:	/* stop alarm */
-																buzzer_stop();
-											break;
-											case SWITCH_ALARM:	/* switch on/off alarm */
-																if(((GPIOB->IDR & (uint32_t)SWITCH_ALARM) >> 9) == (uint32_t)RESET){
-																	/* disable alarm */
-																	alarm_IT(DISABLE);
-																}else if(((GPIOB->IDR & (uint32_t)SWITCH_ALARM) >> 9) == (uint32_t)SET){
-																	/* enable alarm */
-																	alarm_IT(ENABLE);
-																};
-											break;
-										}
-		break;
-		/* in this mode, the hours of the clock can be set, also alarm can be switched and snoozed */
-		case MODE_TIME_SET_CLOCK_h:		switch(GPIO_Pin){
-											case BUTTON_MODE: 	/* set next mode */
-																mode++;
-											break;
-											case BUTTON_PLUS:	/* clock hour up */
-																led_clock_hour_plus();
-											break;
-											case BUTTON_MINUS:	/* clock hour down */
-																led_clock_hour_minus();
-											break;
-											case BUTTON_SNOOZE:;
-											break;
-											case SWITCH_ALARM:;
-											break;
-										}
-		break;
-		/* in this mode, the minutes of the clock can be set, also alarm can be switched and snoozed */
-		case MODE_TIME_SET_CLOCK_min:	switch(GPIO_Pin){
-											case BUTTON_MODE: 	/* set next mode */
-																mode++;
-											break;
-											case BUTTON_PLUS:	/* clock minute up */
-																led_clock_minute_plus();
-											break;
-											case BUTTON_MINUS:	/* clock minute down */
-																led_clock_minute_minus();
-											break;
-											case BUTTON_SNOOZE:;
-											break;
-											case SWITCH_ALARM:;
-											break;
-										}
-		break;
-		/* in this mode, the hours of the alarm can be set, also alarm can be switched and snoozed */
-		case MODE_TIME_SET_ALARM_h:		switch(GPIO_Pin){
-											case BUTTON_MODE: 	/* set next mode */
-																mode++;
-											break;
-											case BUTTON_PLUS:	/* alarm hour up */
-																led_alarm_hour_plus();
-											break;
-											case BUTTON_MINUS:	/* alarm hour down */
-																led_alarm_hour_minus();
-											break;
-											case BUTTON_SNOOZE:;
-											break;
-											case SWITCH_ALARM:;
-											break;
-										}
-		break;
-		/* in this mode, the minutes of the alarm can be set, also alarm can be switched and snoozed */
-		case MODE_TIME_SET_ALARM_min:	switch(GPIO_Pin){
-											case BUTTON_MODE: 	/* set next mode */
-																mode++;
-											break;
-											case BUTTON_PLUS:	/* alarm minute up */
-																led_alarm_minute_plus();
-											break;
-											case BUTTON_MINUS:	/* alarm minute down */
-																led_alarm_minute_minus();
-											break;
-											case BUTTON_SNOOZE:;
-											break;
-											case SWITCH_ALARM:;
-											break;
-										}
-		break;
-	}
-}
-
-/**
-  * @brief  this function is used to refresh time and background of the wordclock
-  * @param  None
-  * @retval None
-  */
-void refresh_clock_display(){
-	/* erase frame buffer */
-	WS2812_clear_buffer();
-	/* write time into frame buffer */
-	draw_time(&red, &green, &blue);
-	/* wait for the data transmission to the led's to be ready */
-	while(!WS2812_TC);
-	/* send frame buffer to the leds */
-	sendbuf_WS2812();
-}
-
-/**
-  * @brief  this function lets hours or minutes blinking on the display
-  * @param  None
-  * @retval None
-  */
-void setup_blinking(Wordclock_Mode mode){
-	/* erase frame buffer */
-	WS2812_clear_buffer();
-	/* write setup time into frame buffer */
-	if(mode == MODE_TIME_SET_CLOCK_h || mode == MODE_TIME_SET_ALARM_h){
-		draw_hh_mm(MINUTES, mode, &red, &green, &blue);
-		if(HAL_GetTick() % SETUP_BLINKING_PERIOD > 0 && HAL_GetTick() % SETUP_BLINKING_PERIOD < 500){
-			draw_hh_mm(HOURS, mode, &red, &green, &blue);
+	uint16_t index = 0;
+	uint16_t run_flag = 1;
+	/* lock the queue */
+	queue_lock = QLOCKED;
+	/* save button event into event qeue */
+	while(index < EVENT_QUEUE_LENGTH && run_flag == 1){
+		if(event_queue[index] == END_OF_QEUE){
+			event_queue[index] = GPIO_Pin;
+			event_queue[index+1] = END_OF_QEUE;
+			run_flag = 0;
+		}else if(event_queue[EVENT_QUEUE_LENGTH-1] == END_OF_QEUE){
+			//do nothing
+			run_flag = 0;
 		}
-	}else if(mode == MODE_TIME_SET_CLOCK_min || mode == MODE_TIME_SET_ALARM_min){
-		draw_hh_mm(HOURS, mode, &red, &green, &blue);
-		if(HAL_GetTick() % SETUP_BLINKING_PERIOD > 0 && HAL_GetTick() % SETUP_BLINKING_PERIOD < 500){
-			draw_hh_mm(MINUTES, mode, &red, &green, &blue);
-		}
+		index++;
 	}
-
-	/* wait for the data transmission to the led's to be ready */
-	while(!WS2812_TC);
-	/* send frame buffer to the leds */
-	sendbuf_WS2812();
+	queue_lock = QUNLOCKED;
 }
 
 /**
-  * @brief  this function is used to get color from the backup register BKP_DR
+  * @brief  this function takes out recent events from the qeue
   * @param  None
-  * @retval None
+  * @retval event
   */
-void get_preferences(uint8_t *red, uint8_t *green, uint8_t *blue){
-	  uint32_t backupregister = 0U;
-	  uint32_t backupregister_value = 0U;
-	  uint32_t backup_register_mask = 0x000000FF;
-
-	  /* get reset variable */
-	  backupregister = (uint32_t)BKP_BASE;
-	  backupregister += (1 * 4U);
-	  backupregister_value = (*(__IO uint32_t *)(backupregister)) & BKP_DR1_D;
-
-	  /* if variable = 0x32F2, BKP registers have saved preferences */
-	  if(backupregister_value != 0x32F2){
-			/* init default color */
-			*red = 0x00;
-			*green = 0x00;
-			*blue = 0xff;
-	  }else{
-		  /* get red color */
-		  backupregister = (uint32_t)BKP_BASE;
-		  backupregister += (2 * 4U);
-
-		  *red = (*(__IO uint32_t *)(backupregister)) & (uint32_t)backup_register_mask;
-		  backupregister = 0U;
-
-		  /* get green color */
-		  backupregister = (uint32_t)BKP_BASE;
-		  backupregister += (3 * 4U);
-
-		  *green = (*(__IO uint32_t *)(backupregister)) & (uint32_t)backup_register_mask;
-		  backupregister = 0U;
-
-
-		  /* get blue color */
-		  backupregister = (uint32_t)BKP_BASE;
-		  backupregister += (4 * 4U);
-
-		  *blue = (*(__IO uint32_t *)(backupregister)) & (uint32_t)backup_register_mask;
-		  backupregister = 0U;
-	  }
+uint16_t unqeue_next_event(){
+	uint16_t latest_event;
+	/* wait for unlocked queue */
+	while(queue_lock);
+	/* check for new events */
+	latest_event = event_queue[0];
+	/* shift all entities, because an event has been taken out of the qeue, except it's the END_OF_QEUE at index 0 */
+	if(event_queue[0] != END_OF_QEUE){
+		queue_index = 0;
+		while(event_queue[queue_index+1] != END_OF_QEUE){
+			event_queue[queue_index] = event_queue[queue_index+1];
+			queue_index++;
+		}
+		event_queue[queue_index] = END_OF_QEUE;
+	}
+	return latest_event;
 }
 
 /**
-  * @brief  this function is used to set color in the backup register BKP_DR
+  * @brief  this function initiates the queue
   * @param  None
   * @retval None
   */
-void set_preferences(uint8_t *red, uint8_t *green, uint8_t *blue){
-	  uint32_t tmp = 0U;
-	  uint32_t backup_register_mask = 0x000000FF;
-
-	  /* set red color */
-	  tmp = (uint32_t)BKP_BASE;
-	  tmp += (2 * 4U);
-
-	  *(__IO uint32_t *) tmp = ( *(__IO uint32_t *) red & backup_register_mask);
-	  tmp = 0U;
-
-	  /* set green color */
-	  tmp = (uint32_t)BKP_BASE;
-	  tmp += (3 * 4U);
-
-	  *(__IO uint32_t *) tmp =  ( *(__IO uint32_t *) green & backup_register_mask);
-	  tmp = 0U;
-
-	  /* set blue color */
-	  tmp = (uint32_t)BKP_BASE;
-	  tmp += (4 * 4U);
-
-	  *(__IO uint32_t *) tmp = ( *(__IO uint32_t *) blue & backup_register_mask);
-	  tmp = 0U;
+void init_event_queue(){
+	event_queue[0] = END_OF_QEUE;
+	queue_lock = QUNLOCKED;
 }
 
 /**

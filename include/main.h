@@ -39,6 +39,15 @@
 #include "buzzer.h"
 #include "lightsensor.h"
 
+/*
+* @brief  enumeration for queue resource locking
+  */
+typedef enum
+{
+	QUNLOCKED,
+	QLOCKED
+}Queue_Lock;
+
 #endif /* __MAIN_H */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

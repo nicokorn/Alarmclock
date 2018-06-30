@@ -29,16 +29,11 @@
 // ----------------------------------------------------------------------------
 
 #include "clock.h"
-#include "ws2812.h"
-#include "buzzer.h"
-#include "stm32f1xx.h"
+
+/* defines */
+#define SETUP_CLOCK_BLINKING_PERIOD	1000 // in ms
 
 /* variables */
-static RTC_TimeTypeDef 		timestructureset;
-static RTC_DateTypeDef 		datestructureset;
-static RTC_TimeTypeDef 		timestructureget;
-static RTC_DateTypeDef 		datestructureget;
-static RTC_AlarmTypeDef 	alarmstructure;
 static Alarm_Mode			alarm_mode;
 static uint32_t				alarm_id;
 static Number 				zero;
@@ -51,10 +46,18 @@ static Number 				six;
 static Number 				seven;
 static Number 				eight;
 static Number 				nine;
-static Number 				double_point;
+static Number 				doublepoint;
 static uint8_t	 			h0, h1, m0, m1;
 static uint16_t 			x_offset;
 static uint8_t 				y_offset;
+static uint8_t 				color_pattern[4][3] = {
+									{0x55, 0x55, 0x55},	//white
+									{0x55, 0x00, 0x00},	//red
+									{0x00, 0x55, 0x00},	//green
+									{0x00, 0x00, 0x55}	//blue
+									};
+static uint32_t				hal_tick_temp;
+extern uint8_t 				WS2812_TC;					// led transmission flag
 
 /* global variables */
 RTC_HandleTypeDef 	RTC_Handle;
@@ -64,7 +67,7 @@ RTC_HandleTypeDef 	RTC_Handle;
   * @note   None
   * @retval None
   */
-void init_clock(){
+void init_RTC( Alarmclock *alarmclock_param){
 	/* construct the numbers
 	 * 1 = set pixel
 	 * 0 = empty pixel
@@ -290,27 +293,27 @@ void init_clock(){
 	nine.number_construction[1][6] = 1;
 	nine.number_construction[2][6] = 1;
 	/* doublepoint */
-	nine.number_construction[0][0] = 0;
-	nine.number_construction[1][0] = 0;
-	nine.number_construction[2][0] = 0;
-	nine.number_construction[0][1] = 0;
-	nine.number_construction[1][1] = 0;
-	nine.number_construction[2][1] = 0;
-	nine.number_construction[0][2] = 0;
-	nine.number_construction[1][2] = 1;
-	nine.number_construction[2][2] = 0;
-	nine.number_construction[0][3] = 0;
-	nine.number_construction[1][3] = 0;
-	nine.number_construction[2][3] = 0;
-	nine.number_construction[0][4] = 0;
-	nine.number_construction[1][4] = 1;
-	nine.number_construction[2][4] = 0;
-	nine.number_construction[0][5] = 0;
-	nine.number_construction[1][5] = 0;
-	nine.number_construction[2][5] = 0;
-	nine.number_construction[0][6] = 0;
-	nine.number_construction[1][6] = 0;
-	nine.number_construction[2][6] = 0;
+	doublepoint.number_construction[0][0] = 0;
+	doublepoint.number_construction[1][0] = 0;
+	doublepoint.number_construction[2][0] = 0;
+	doublepoint.number_construction[0][1] = 0;
+	doublepoint.number_construction[1][1] = 0;
+	doublepoint.number_construction[2][1] = 0;
+	doublepoint.number_construction[0][2] = 0;
+	doublepoint.number_construction[1][2] = 1;
+	doublepoint.number_construction[2][2] = 0;
+	doublepoint.number_construction[0][3] = 0;
+	doublepoint.number_construction[1][3] = 0;
+	doublepoint.number_construction[2][3] = 0;
+	doublepoint.number_construction[0][4] = 0;
+	doublepoint.number_construction[1][4] = 1;
+	doublepoint.number_construction[2][4] = 0;
+	doublepoint.number_construction[0][5] = 0;
+	doublepoint.number_construction[1][5] = 0;
+	doublepoint.number_construction[2][5] = 0;
+	doublepoint.number_construction[0][6] = 0;
+	doublepoint.number_construction[1][6] = 0;
+	doublepoint.number_construction[2][6] = 0;
 
 	/* Configure RTC prescaler and RTC data registers */
 	/* RTC configured as follow:
@@ -325,8 +328,8 @@ void init_clock(){
 
 	/* Read the Back Up Register 1 Data */
 	if (HAL_RTCEx_BKUPRead(&RTC_Handle, RTC_BKP_DR1) != 0x32F2){
-	    /* Configure RTC Calendar */
-	    RTC_CalendarConfig();
+	    /* configure RTC calendar */
+	    RTC_CalendarConfig(alarmclock_param);
 	}else{
 		/* Clear source Reset Flag */
 	    __HAL_RCC_CLEAR_RESET_FLAGS();
@@ -353,62 +356,62 @@ void draw_number(Number number, uint16_t x_offset, uint8_t y_offset, uint8_t *re
   * @note   None
   * @retval None
   */
-void draw_hh_mm(Time_Setup time, Wordclock_Mode mode, uint8_t *red, uint8_t *green, uint8_t *blue){
+void draw_hh_mm(Time_Setup time, Alarmclock *alarmclock_param){
 	/* depending on mode, last refreshed time data is load into h0h1:m0m1 or the alarm data into h0h1:m0m1 */
-	if(mode == MODE_TIME_SET_CLOCK_h || mode == MODE_TIME_SET_CLOCK_min){
+	if(alarmclock_param->mode == MODE_TIME_SET_CLOCK_h || alarmclock_param->mode == MODE_TIME_SET_CLOCK_min){
 		/* process hours */
-		h0 = timestructureget.Hours / 10;
-		h1 = timestructureget.Hours % 10;
+		h0 = alarmclock_param->timestructure.Hours / 10;
+		h1 = alarmclock_param->timestructure.Hours % 10;
 		/* process minutes */
-		m0 = timestructureget.Minutes / 10;
-		m1 = timestructureget.Minutes % 10;
-	}else if(mode == MODE_TIME_SET_ALARM_h || mode == MODE_TIME_SET_ALARM_min){
+		m0 = alarmclock_param->timestructure.Minutes / 10;
+		m1 = alarmclock_param->timestructure.Minutes % 10;
+	}else if(alarmclock_param->mode == MODE_TIME_SET_ALARM_h || alarmclock_param->mode == MODE_TIME_SET_ALARM_min){
 		/* process hours */
-		h0 = alarmstructure.AlarmTime.Hours / 10;
-		h1 = alarmstructure.AlarmTime.Hours % 10;
+		h0 = alarmclock_param->alarmstructure.AlarmTime.Hours / 10;
+		h1 = alarmclock_param->alarmstructure.AlarmTime.Hours % 10;
 		/* process minutes */
-		m0 = alarmstructure.AlarmTime.Hours / 10;
-		m1 = alarmstructure.AlarmTime.Hours % 10;
+		m0 = alarmclock_param->alarmstructure.AlarmTime.Minutes / 10;
+		m1 = alarmclock_param->alarmstructure.AlarmTime.Minutes % 10;
 	}
 
 	/* draw double point */
-	draw_number(double_point, (uint16_t)7, (uint8_t)0, red, green, blue);
+	draw_number(doublepoint, (uint16_t)7, (uint8_t)0,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 	if(time == HOURS){
 		/* draw numbers into display buffer */
 		/* number position h0 */
 		x_offset = 0;
 		y_offset = 0;
 		switch(h0){
-			case 0:	draw_number(zero, x_offset, y_offset, red, green, blue);
+			case 0:	draw_number(zero, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 1:	draw_number(one, x_offset, y_offset, red, green, blue);
+			case 1:	draw_number(one, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 2:	draw_number(two, x_offset, y_offset, red, green, blue);
+			case 2:	draw_number(two, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
 		}
 		/* number position h1 */
 		x_offset = 4;
 		y_offset = 0;
 		switch(h1){
-			case 0:	draw_number(zero, x_offset, y_offset, red, green, blue);
+			case 0:	draw_number(zero, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 1:	draw_number(one, x_offset, y_offset, red, green, blue);
+			case 1:	draw_number(one, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 2:	draw_number(two, x_offset, y_offset, red, green, blue);
+			case 2:	draw_number(two, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 3:	draw_number(three, x_offset, y_offset, red, green, blue);
+			case 3:	draw_number(three, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 4:	draw_number(four, x_offset, y_offset, red, green, blue);
+			case 4:	draw_number(four, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 5:	draw_number(five, x_offset, y_offset, red, green, blue);
+			case 5:	draw_number(five, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 6:	draw_number(six, x_offset, y_offset, red, green, blue);
+			case 6:	draw_number(six, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 7:	draw_number(seven, x_offset, y_offset, red, green, blue);
+			case 7:	draw_number(seven, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 8:	draw_number(eight, x_offset, y_offset, red, green, blue);
+			case 8:	draw_number(eight, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 9:	draw_number(nine, x_offset, y_offset, red, green, blue);
+			case 9:	draw_number(nine, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
 		}
 	}else if(time == MINUTES){
@@ -416,42 +419,42 @@ void draw_hh_mm(Time_Setup time, Wordclock_Mode mode, uint8_t *red, uint8_t *gre
 		x_offset = 10;
 		y_offset = 0;
 		switch(m0){
-			case 0:	draw_number(zero, x_offset, y_offset, red, green, blue);
+			case 0:	draw_number(zero, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 1:	draw_number(one, x_offset, y_offset, red, green, blue);
+			case 1:	draw_number(one, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 2:	draw_number(two, x_offset, y_offset, red, green, blue);
+			case 2:	draw_number(two, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 3:	draw_number(three, x_offset, y_offset, red, green, blue);
+			case 3:	draw_number(three, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 4:	draw_number(four, x_offset, y_offset, red, green, blue);
+			case 4:	draw_number(four, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 5:	draw_number(five, x_offset, y_offset, red, green, blue);
+			case 5:	draw_number(five, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
 		}
 		/* number position m1 */
 		x_offset = 14;
 		y_offset = 0;
 		switch(m1){
-			case 0:	draw_number(zero, x_offset, y_offset, red, green, blue);
+			case 0:	draw_number(zero, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 1:	draw_number(one, x_offset, y_offset, red, green, blue);
+			case 1:	draw_number(one, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 2:	draw_number(two, x_offset, y_offset, red, green, blue);
+			case 2:	draw_number(two, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 3:	draw_number(three, x_offset, y_offset, red, green, blue);
+			case 3:	draw_number(three, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 4:	draw_number(four, x_offset, y_offset, red, green, blue);
+			case 4:	draw_number(four, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 5:	draw_number(five, x_offset, y_offset, red, green, blue);
+			case 5:	draw_number(five, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 6:	draw_number(six, x_offset, y_offset, red, green, blue);
+			case 6:	draw_number(six, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 7:	draw_number(seven, x_offset, y_offset, red, green, blue);
+			case 7:	draw_number(seven, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 8:	draw_number(eight, x_offset, y_offset, red, green, blue);
+			case 8:	draw_number(eight, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
-			case 9:	draw_number(nine, x_offset, y_offset, red, green, blue);
+			case 9:	draw_number(nine, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 			break;
 		}
 	}else{
@@ -466,102 +469,102 @@ void draw_hh_mm(Time_Setup time, Wordclock_Mode mode, uint8_t *red, uint8_t *gre
   * @note   None
   * @retval None
   */
-void draw_time(uint8_t *red, uint8_t *green, uint8_t *blue){
-	HAL_RTC_GetTime(&RTC_Handle, &timestructureget, RTC_FORMAT_BIN);
-	HAL_RTC_GetDate(&RTC_Handle, &datestructureget, RTC_FORMAT_BIN);
+void draw_time(Alarmclock *alarmclock_param){
+	HAL_RTC_GetTime(&RTC_Handle, &alarmclock_param->timestructure, RTC_FORMAT_BIN);
+	HAL_RTC_GetDate(&RTC_Handle, &alarmclock_param->datestructure, RTC_FORMAT_BIN);
 
 	/* hours and minutes local places: hh:mm = h0h1:m0m2 */
 	/* process hours */
-	h0 = timestructureget.Hours / 10;
-	h1 = timestructureget.Hours % 10;
+	h0 = alarmclock_param->timestructure.Hours / 10;
+	h1 = alarmclock_param->timestructure.Hours % 10;
 
 	/* process minutes */
-	m0 = timestructureget.Minutes / 10;
-	m1 = timestructureget.Minutes % 10;
+	m0 = alarmclock_param->timestructure.Minutes / 10;
+	m1 = alarmclock_param->timestructure.Minutes % 10;
 
 	/* draw numbers into display buffer */
 	/* number position h0 */
 	x_offset = 0;
 	y_offset = 0;
 	switch(h0){
-		case 0:	draw_number(zero, x_offset, y_offset, red, green, blue);
+		case 0:	draw_number(zero, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 		break;
-		case 1:	draw_number(one, x_offset, y_offset, red, green, blue);
+		case 1:	draw_number(one, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 		break;
-		case 2:	draw_number(two, x_offset, y_offset, red, green, blue);
+		case 2:	draw_number(two, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 		break;
 	}
 	/* number position h1 */
 	x_offset = 4;
 	y_offset = 0;
 	switch(h1){
-		case 0:	draw_number(zero, x_offset, y_offset, red, green, blue);
+		case 0:	draw_number(zero, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 		break;
-		case 1:	draw_number(one, x_offset, y_offset, red, green, blue);
+		case 1:	draw_number(one, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 		break;
-		case 2:	draw_number(two, x_offset, y_offset, red, green, blue);
+		case 2:	draw_number(two, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 		break;
-		case 3:	draw_number(three, x_offset, y_offset, red, green, blue);
+		case 3:	draw_number(three, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 		break;
-		case 4:	draw_number(four, x_offset, y_offset, red, green, blue);
+		case 4:	draw_number(four, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 		break;
-		case 5:	draw_number(five, x_offset, y_offset, red, green, blue);
+		case 5:	draw_number(five, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 		break;
-		case 6:	draw_number(six, x_offset, y_offset, red, green, blue);
+		case 6:	draw_number(six, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 		break;
-		case 7:	draw_number(seven, x_offset, y_offset, red, green, blue);
+		case 7:	draw_number(seven, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 		break;
-		case 8:	draw_number(eight, x_offset, y_offset, red, green, blue);
+		case 8:	draw_number(eight, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 		break;
-		case 9:	draw_number(nine, x_offset, y_offset, red, green, blue);
+		case 9:	draw_number(nine, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 		break;
 	}
 	/* second double point */
 	x_offset = 7;
 	y_offset = 0;
-	if(timestructureget.Seconds%2){
-		draw_number(double_point, x_offset, y_offset, red, green, blue);
+	if(alarmclock_param->timestructure.Seconds%2){
+		draw_number(doublepoint, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 	}
 	/* number position m0 */
 	x_offset = 10;
 	y_offset = 0;
 	switch(m0){
-	case 0:	draw_number(zero, x_offset, y_offset, red, green, blue);
+	case 0:	draw_number(zero, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 	break;
-	case 1:	draw_number(one, x_offset, y_offset, red, green, blue);
+	case 1:	draw_number(one, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 	break;
-	case 2:	draw_number(two, x_offset, y_offset, red, green, blue);
+	case 2:	draw_number(two, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 	break;
-	case 3:	draw_number(three, x_offset, y_offset, red, green, blue);
+	case 3:	draw_number(three, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 	break;
-	case 4:	draw_number(four, x_offset, y_offset, red, green, blue);
+	case 4:	draw_number(four, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 	break;
-	case 5:	draw_number(five, x_offset, y_offset, red, green, blue);
+	case 5:	draw_number(five, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 	break;
 	}
 	/* number position m1 */
 	x_offset = 14;
 	y_offset = 0;
 	switch(m1){
-	case 0:	draw_number(zero, x_offset, y_offset, red, green, blue);
+	case 0:	draw_number(zero, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 	break;
-	case 1:	draw_number(one, x_offset, y_offset, red, green, blue);
+	case 1:	draw_number(one, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 	break;
-	case 2:	draw_number(two, x_offset, y_offset, red, green, blue);
+	case 2:	draw_number(two, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 	break;
-	case 3:	draw_number(three, x_offset, y_offset, red, green, blue);
+	case 3:	draw_number(three, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 	break;
-	case 4:	draw_number(four, x_offset, y_offset, red, green, blue);
+	case 4:	draw_number(four, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 	break;
-	case 5:	draw_number(five, x_offset, y_offset, red, green, blue);
+	case 5:	draw_number(five, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 	break;
-	case 6:	draw_number(six, x_offset, y_offset, red, green, blue);
+	case 6:	draw_number(six, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 	break;
-	case 7:	draw_number(seven, x_offset, y_offset, red, green, blue);
+	case 7:	draw_number(seven, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 	break;
-	case 8:	draw_number(eight, x_offset, y_offset, red, green, blue);
+	case 8:	draw_number(eight, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 	break;
-	case 9:	draw_number(nine, x_offset, y_offset, red, green, blue);
+	case 9:	draw_number(nine, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue);
 	break;
 	}
 }
@@ -571,32 +574,16 @@ void draw_time(uint8_t *red, uint8_t *green, uint8_t *blue){
   * @note   None
   * @retval None
   */
-void led_clock_hour_plus(){
-	/* read time and date from rtc registers and save it into time and datestructureget*/
-	//HAL_RTC_GetTime(&RTC_Handle, &timestructureget, RTC_FORMAT_BIN);
-	//HAL_RTC_GetDate(&RTC_Handle, &datestructureget, RTC_FORMAT_BIN);
-
-	/* increment 1 hour and save it on the struct */
-	if(timestructureget.Hours + 0x01 < 0x18){
-		timestructureset.Hours += 0x01;
+void led_clock_hour_plus(Alarmclock *alarmclock_param){
+	/* reset tick counter, for clean setup blinking of the numbers */
+	HAL_SetTick(0);
+	/* read time and date from rtc registers and save it into time and datestructureget */
+	if(alarmclock_param->timestructure.Hours - 0x01 > 0x00){
+		alarmclock_param->timestructure.Hours -= 0x01;
 	}else{
-		timestructureset.Hours = 0x00;
+		alarmclock_param->timestructure.Hours = 0x17;
 	}
-
-	/* don't change minutes, seconds and date */
-	/*
-	timestructureset.Minutes = 	timestructureget.Minutes;
-	timestructureset.Seconds = 	timestructureget.Seconds;
-
-	datestructureset.Year = 	datestructureget.Year;
-	datestructureset.Month = 	datestructureget.Month;
-	datestructureset.Date = 	datestructureget.Date;
-	datestructureset.WeekDay = 	datestructureget.WeekDay;
-	*/
-
-	/* set new time in the rtc registers with the structs */
-	HAL_RTC_SetTime(&RTC_Handle, &timestructureset, RTC_FORMAT_BIN);
-	//HAL_RTC_SetDate(&RTC_Handle, &datestructureset, RTC_FORMAT_BIN);
+	HAL_RTC_SetTime(&RTC_Handle, &alarmclock_param->timestructure, RTC_FORMAT_BIN);
 }
 
 /**
@@ -604,29 +591,17 @@ void led_clock_hour_plus(){
   * @note   None
   * @retval None
   */
-void led_clock_hour_minus(){
-	/* read time and date from rtc registers and save it into time and datestructureget*/
-	//HAL_RTC_GetTime(&RTC_Handle, &timestructureget, RTC_FORMAT_BIN);
-	//HAL_RTC_GetDate(&RTC_Handle, &datestructureget, RTC_FORMAT_BIN);
-
-	if(timestructureget.Hours - 0x01 > 0x00){
-		timestructureset.Hours -= 0x01;
+void led_clock_hour_minus(Alarmclock *alarmclock_param){
+	/* reset tick counter, for clean setup blinking of the numbers */
+	HAL_SetTick(0);
+	/* increment 1 hour and save it on the struct */
+	if(alarmclock_param->timestructure.Hours + 0x01 < 0x18){
+		alarmclock_param->timestructure.Hours += 0x01;
 	}else{
-		timestructureset.Hours = 0x17;
+		alarmclock_param->timestructure.Hours = 0x00;
 	}
-
-	/*
-	timestructureset.Minutes = 	timestructureget.Minutes;
-	timestructureset.Seconds = 	timestructureget.Seconds;
-
-	datestructureset.Year = 	datestructureget.Year;
-	datestructureset.Month = 	datestructureget.Month;
-	datestructureset.Date = 	datestructureget.Date;
-	datestructureset.WeekDay = 	datestructureget.WeekDay;
-	*/
-
-	HAL_RTC_SetTime(&RTC_Handle, &timestructureset, RTC_FORMAT_BIN);
-	//HAL_RTC_SetDate(&RTC_Handle, &datestructureset, RTC_FORMAT_BIN);
+	/* set new time in the rtc registers with the structs */
+	HAL_RTC_SetTime(&RTC_Handle, &alarmclock_param->timestructure, RTC_FORMAT_BIN);
 }
 
 /**
@@ -634,29 +609,15 @@ void led_clock_hour_minus(){
   * @note   None
   * @retval None
   */
-void led_clock_minute_plus(){
-	/* read time and date from rtc registers and save it into time and datestructureget*/
-	//HAL_RTC_GetTime(&RTC_Handle, &timestructureget, RTC_FORMAT_BIN);
-	//HAL_RTC_GetDate(&RTC_Handle, &datestructureget, RTC_FORMAT_BIN);
-
-	//timestructureset.Hours = timestructureget.Hours;
-	if(timestructureget.Minutes + 0x01 < 0x3c){
-		timestructureset.Minutes += 0x01;
+void led_clock_minute_plus(Alarmclock *alarmclock_param){
+	/* reset tick counter, for clean setup blinking of the numbers */
+	HAL_SetTick(0);
+	if(alarmclock_param->timestructure.Minutes - 0x01 > 0x00){
+		alarmclock_param->timestructure.Minutes -= 0x01;
 	}else{
-		timestructureset.Minutes = 0x00;
+		alarmclock_param->timestructure.Minutes = 0x3b;
 	}
-
-	/*
-	timestructureset.Seconds = timestructureget.Seconds;
-
-	datestructureset.Year = 	datestructureget.Year;
-	datestructureset.Month = 	datestructureget.Month;
-	datestructureset.Date = 	datestructureget.Date;
-	datestructureset.WeekDay = 	datestructureget.WeekDay;
-	*/
-
-	HAL_RTC_SetTime(&RTC_Handle, &timestructureset, RTC_FORMAT_BIN);
-	//HAL_RTC_SetDate(&RTC_Handle, &datestructureset, RTC_FORMAT_BIN);
+	HAL_RTC_SetTime(&RTC_Handle, &alarmclock_param->timestructure, RTC_FORMAT_BIN);
 }
 
 /**
@@ -664,28 +625,15 @@ void led_clock_minute_plus(){
   * @note   None
   * @retval None
   */
-void led_clock_minute_minus(){
-	/* read time and date from rtc registers and save it into time and datestructureget*/
-	//HAL_RTC_GetTime(&RTC_Handle, &timestructureget, RTC_FORMAT_BIN);
-	//HAL_RTC_GetDate(&RTC_Handle, &datestructureget, RTC_FORMAT_BIN);
-
-	//timestructureset.Hours = timestructureget.Hours;
-	if(timestructureget.Minutes - 0x01 > 0x00){
-		timestructureset.Minutes -= 0x01;
+void led_clock_minute_minus(Alarmclock *alarmclock_param){
+	/* reset tick counter, for clean setup blinking of the numbers */
+	HAL_SetTick(0);
+	if(alarmclock_param->timestructure.Minutes + 0x01 < 0x3c){
+		alarmclock_param->timestructure.Minutes += 0x01;
 	}else{
-		timestructureset.Minutes = 0x3b;
+		alarmclock_param->timestructure.Minutes = 0x00;
 	}
-	/*
-	timestructureset.Seconds = timestructureget.Seconds;
-
-	datestructureset.Year = 	datestructureget.Year;
-	datestructureset.Month = 	datestructureget.Month;
-	datestructureset.Date = 	datestructureget.Date;
-	datestructureset.WeekDay = 	datestructureget.WeekDay;
-	*/
-
-	HAL_RTC_SetTime(&RTC_Handle, &timestructureset, RTC_FORMAT_BIN);
-	//HAL_RTC_SetDate(&RTC_Handle, &datestructureset, RTC_FORMAT_BIN);
+	HAL_RTC_SetTime(&RTC_Handle, &alarmclock_param->timestructure, RTC_FORMAT_BIN);
 }
 
 /**
@@ -693,14 +641,19 @@ void led_clock_minute_minus(){
   * @note   None
   * @retval None
   */
-void led_alarm_hour_plus(){
-	HAL_RTC_GetAlarm(&RTC_Handle, &alarmstructure, alarm_id, RTC_FORMAT_BCD);
-	if(alarmstructure.AlarmTime.Hours + 0x01 < 0x18){
-		alarmstructure.AlarmTime.Hours += 0x01;
+void led_alarm_hour_plus(Alarmclock *alarmclock_param){
+	/* reset tick counter, for clean setup blinking of the numbers */
+	HAL_SetTick(0);
+	if(alarmclock_param->alarmstructure.AlarmTime.Hours - 0x01 > 0x00){
+		alarmclock_param->alarmstructure.AlarmTime.Hours -= 0x01;
 	}else{
-		alarmstructure.AlarmTime.Hours = 0x00;
+		alarmclock_param->alarmstructure.AlarmTime.Hours = 0x17;
 	}
-	HAL_RTC_SetAlarm(&RTC_Handle, &alarmstructure, RTC_FORMAT_BCD);
+	alarmclock_param->alarmstructure.AlarmTime.Seconds = 0x00;
+	HAL_RTC_SetAlarm_IT(&RTC_Handle, &alarmclock_param->alarmstructure, RTC_FORMAT_BIN);
+	/* Enable and set RTC interrupt for alarm function */
+	HAL_NVIC_SetPriority(RTC_Alarm_IRQn, 1, 0);
+	HAL_NVIC_EnableIRQ(RTC_Alarm_IRQn);
 }
 
 /**
@@ -708,14 +661,19 @@ void led_alarm_hour_plus(){
   * @note   None
   * @retval None
   */
-void led_alarm_hour_minus(){
-	HAL_RTC_GetAlarm(&RTC_Handle, &alarmstructure, alarm_id, RTC_FORMAT_BCD);
-	if(alarmstructure.AlarmTime.Hours - 0x01 > 0x00){
-		alarmstructure.AlarmTime.Hours -= 0x01;
+void led_alarm_hour_minus(Alarmclock *alarmclock_param){
+	/* reset tick counter, for clean setup blinking of the numbers */
+	HAL_SetTick(0);
+	if(alarmclock_param->alarmstructure.AlarmTime.Hours + 0x01 < 0x18){
+		alarmclock_param->alarmstructure.AlarmTime.Hours += 0x01;
 	}else{
-		alarmstructure.AlarmTime.Hours = 0x17;
+		alarmclock_param->alarmstructure.AlarmTime.Hours = 0x00;
 	}
-	HAL_RTC_SetAlarm(&RTC_Handle, &alarmstructure, RTC_FORMAT_BCD);
+	alarmclock_param->alarmstructure.AlarmTime.Seconds = 0x00;
+	HAL_RTC_SetAlarm_IT(&RTC_Handle, &alarmclock_param->alarmstructure, RTC_FORMAT_BIN);
+	/* Enable and set RTC interrupt for alarm function */
+	HAL_NVIC_SetPriority(RTC_Alarm_IRQn, 1, 0);
+	HAL_NVIC_EnableIRQ(RTC_Alarm_IRQn);
 }
 
 /**
@@ -723,14 +681,19 @@ void led_alarm_hour_minus(){
   * @note   None
   * @retval None
   */
-void led_alarm_minute_plus(){
-	HAL_RTC_GetAlarm(&RTC_Handle, &alarmstructure, alarm_id, RTC_FORMAT_BCD);
-	if(alarmstructure.AlarmTime.Minutes + 0x01 < 0x3c){
-		alarmstructure.AlarmTime.Minutes += 0x01;
+void led_alarm_minute_plus(Alarmclock *alarmclock_param){
+	/* reset tick counter, for clean setup blinking of the numbers */
+	HAL_SetTick(0);
+	if(alarmclock_param->alarmstructure.AlarmTime.Minutes - 0x01 > 0x00){
+		alarmclock_param->alarmstructure.AlarmTime.Minutes -= 0x01;
 	}else{
-		alarmstructure.AlarmTime.Minutes = 0x00;
+		alarmclock_param->alarmstructure.AlarmTime.Minutes = 0x3b;
 	}
-	HAL_RTC_SetAlarm(&RTC_Handle, &alarmstructure, RTC_FORMAT_BCD);
+	alarmclock_param->alarmstructure.AlarmTime.Seconds = 0x00;
+	HAL_RTC_SetAlarm_IT(&RTC_Handle, &alarmclock_param->alarmstructure, RTC_FORMAT_BIN);
+	/* Enable and set RTC interrupt for alarm function */
+	HAL_NVIC_SetPriority(RTC_Alarm_IRQn, 1, 0);
+	HAL_NVIC_EnableIRQ(RTC_Alarm_IRQn);
 }
 
 /**
@@ -738,14 +701,19 @@ void led_alarm_minute_plus(){
   * @note   None
   * @retval None
   */
-void led_alarm_minute_minus(){
-	HAL_RTC_GetAlarm(&RTC_Handle, &alarmstructure, alarm_id, RTC_FORMAT_BCD);
-	if(alarmstructure.AlarmTime.Minutes - 0x01 > 0x00){
-		alarmstructure.AlarmTime.Minutes -= 0x01;
+void led_alarm_minute_minus(Alarmclock *alarmclock_param){
+	/* reset tick counter, for clean setup blinking of the numbers */
+	HAL_SetTick(0);
+	if(alarmclock_param->alarmstructure.AlarmTime.Minutes + 0x01 < 0x3c){
+		alarmclock_param->alarmstructure.AlarmTime.Minutes += 0x01;
 	}else{
-		alarmstructure.AlarmTime.Minutes = 0x3b;
+		alarmclock_param->alarmstructure.AlarmTime.Minutes = 0x00;
 	}
-	HAL_RTC_SetAlarm(&RTC_Handle, &alarmstructure, RTC_FORMAT_BCD);
+	alarmclock_param->alarmstructure.AlarmTime.Seconds = 0x00;
+	HAL_RTC_SetAlarm_IT(&RTC_Handle, &alarmclock_param->alarmstructure, RTC_FORMAT_BIN);
+	/* Enable and set RTC interrupt for alarm function */
+	HAL_NVIC_SetPriority(RTC_Alarm_IRQn, 1, 0);
+	HAL_NVIC_EnableIRQ(RTC_Alarm_IRQn);
 }
 
 /**
@@ -753,45 +721,29 @@ void led_alarm_minute_minus(){
   * @param  None
   * @retval None
   */
-void RTC_CalendarConfig(void){
+void RTC_CalendarConfig(Alarmclock *alarmclock_param){
 	/* Configure the Date */
 	/* Set Date: Tuesday February 18th 2014 */
-	datestructureset.Year = 	0x14;
-	datestructureset.Month = 	RTC_MONTH_FEBRUARY;
-	datestructureset.Date = 	0x18;
-	datestructureset.WeekDay = 	RTC_WEEKDAY_TUESDAY;
+	alarmclock_param->datestructure.Year = 		0x14;
+	alarmclock_param->datestructure.Month = 	RTC_MONTH_FEBRUARY;
+	alarmclock_param->datestructure.Date = 		0x18;
+	alarmclock_param->datestructure.WeekDay = 	RTC_WEEKDAY_TUESDAY;
 
-	if(HAL_RTC_SetDate(&RTC_Handle,&datestructureset,RTC_FORMAT_BCD) != HAL_OK){
+	if(HAL_RTC_SetDate(&RTC_Handle,&alarmclock_param->datestructure,RTC_FORMAT_BCD) != HAL_OK){
 		/* Initialization Error */
 		//Error_Handler();
 	}
 
 	/* Configure the Time */
 	/* Set Time: 02:00:00 */
-	timestructureset.Hours = 	0x02;
-	timestructureset.Minutes = 	0x00;
-	timestructureset.Seconds = 	0x00;
+	alarmclock_param->timestructure.Hours = 	0x02;
+	alarmclock_param->timestructure.Minutes = 	0x00;
+	alarmclock_param->timestructure.Seconds = 	0x00;
 
-	if (HAL_RTC_SetTime(&RTC_Handle, &timestructureset, RTC_FORMAT_BCD) != HAL_OK){
+	if (HAL_RTC_SetTime(&RTC_Handle,&alarmclock_param->timestructure,RTC_FORMAT_BCD) != HAL_OK){
 		/* Initialization Error */
 		//Error_Handler();
 	}
-
-	/* Configure the alarm */
-	/* Set alarm: 00:00:00 */
-	alarmstructure.AlarmTime.Hours = 	0x00;
-	alarmstructure.AlarmTime.Minutes = 0x00;
-	alarmstructure.AlarmTime.Seconds = 0x00;
-	alarm_id = (uint32_t)1;
-	alarmstructure.Alarm = alarm_id;
-
-	if (HAL_RTC_SetAlarm_IT(&RTC_Handle, &alarmstructure, RTC_FORMAT_BCD) != HAL_OK){
-		/* Initialization Error */
-		//Error_Handler();
-	}
-	/* Enable and set RTC Interrupt */
-	HAL_NVIC_SetPriority(RTC_Alarm_IRQn, 1, 0);
-	HAL_NVIC_EnableIRQ(RTC_Alarm_IRQn);
 
 	/* Writes a data in a RTC Backup data Register1 */
 	HAL_RTCEx_BKUPWrite(&RTC_Handle, RTC_BKP_DR1, 0x32F2);
@@ -826,12 +778,258 @@ void alarm_lock(Alarm_Mode alarm_lock){
   * @retval None
   */
 void RTC_AlarmEventCallback(){
-	if(alarm_mode == UNLOCKED){
+	//if(alarm_mode == UNLOCKED){
 		buzzer_start();
+	//}
+}
+
+/**
+  * @brief  this function increments the recent mode
+  * @param  None
+  * @retval None
+  */
+void increment_mode(Alarmclock *alarmclock_param){
+	/* reset tick counter, for clean setup blinking of the numbers */
+	HAL_SetTick(0);
+	if(alarmclock_param->mode < 4){
+		alarmclock_param->mode++;
+	}else{
+		alarmclock_param->mode = 0;
 	}
 }
 
+/**
+  * @brief  this function is used to refresh time and background of the wordclock
+  * @param  None
+  * @retval None
+  */
+void refresh_clock_display(Alarmclock *alarmclock_param){
+	/* erase frame buffer */
+	WS2812_clear_buffer();
+	/* write time into frame buffer */
+	draw_time(alarmclock_param);
+	/* wait for the data transmission to the led's to be ready */
+	while(!WS2812_TC);
+	/* send frame buffer to the leds */
+	sendbuf_WS2812();
+}
 
+/**
+  * @brief  this function lets hours or minutes blinking on the display
+  * @param  None
+  * @retval None
+  */
+void setup_clock_blinking(Alarmclock *alarmclock_param){
+	/* erase frame buffer */
+	WS2812_clear_buffer();
+	/* get recent hal tick value */
+	hal_tick_temp = HAL_GetTick();
+	/* write setup time into frame buffer */
+	if(alarmclock_param->mode == MODE_TIME_SET_CLOCK_h || alarmclock_param->mode == MODE_TIME_SET_ALARM_h){
+		draw_hh_mm(MINUTES, alarmclock_param);
+		if(hal_tick_temp % SETUP_CLOCK_BLINKING_PERIOD > 0 && hal_tick_temp % SETUP_CLOCK_BLINKING_PERIOD < 500){
+			draw_hh_mm(HOURS, alarmclock_param);
+		}
+	}else if(alarmclock_param->mode == MODE_TIME_SET_CLOCK_min || alarmclock_param->mode == MODE_TIME_SET_ALARM_min){
+		draw_hh_mm(HOURS, alarmclock_param);
+		if(hal_tick_temp % SETUP_CLOCK_BLINKING_PERIOD > 0 && hal_tick_temp % SETUP_CLOCK_BLINKING_PERIOD < 500){
+			draw_hh_mm(MINUTES, alarmclock_param);
+		}
+	}
+	/* wait for the data transmission to the led's to be ready */
+	while(!WS2812_TC);
+	/* send frame buffer to the leds */
+	sendbuf_WS2812();
+}
+
+/**
+  * @brief  this function is used to get color from the backup register BKP_DR
+  * @param  None
+  * @retval None
+  */
+void get_clock_preferences(Alarmclock *alarmclock_param){
+	  uint32_t backupregister = 0U;
+	  uint32_t backupregister_value = 0U;
+	  uint32_t backup_register_mask = 0x000000FF;
+
+	  /* get reset variable */
+	  backupregister = (uint32_t)BKP_BASE;
+	  backupregister += (1 * 4U);
+	  backupregister_value = (*(__IO uint32_t *)(backupregister)) & BKP_DR1_D;
+
+	  /* if variable = 0x32F2, BKP registers have saved preferences, otherwise use default values */
+	  if(backupregister_value != 0x32F2){
+			/* init default color */
+			alarmclock_param->color_index = 0;
+		  	alarmclock_param->red =  color_pattern[alarmclock_param->color_index][0];
+		  	alarmclock_param->green =  color_pattern[alarmclock_param->color_index][1];
+		  	alarmclock_param->blue =  color_pattern[alarmclock_param->color_index][2];
+		  	/* init default alarm time */
+		  	alarmclock_param->alarmstructure.AlarmTime.Hours = 0x06;
+		  	alarmclock_param->alarmstructure.AlarmTime.Minutes = 0x00;
+		  	alarmclock_param->alarmstructure.AlarmTime.Seconds = 0x00;
+		    /* safe initial preferences */
+		    set_clock_preferences(alarmclock_param);
+	  }else{
+		  /* get red color */
+		  backupregister = (uint32_t)BKP_BASE;
+		  backupregister += (2 * 4U);
+
+		  alarmclock_param->red = (*(__IO uint32_t *)(backupregister)) & (uint32_t)backup_register_mask;
+		  backupregister = 0U;
+
+		  /* get green color */
+		  backupregister = (uint32_t)BKP_BASE;
+		  backupregister += (3 * 4U);
+
+		  alarmclock_param->green = (*(__IO uint32_t *)(backupregister)) & (uint32_t)backup_register_mask;
+		  backupregister = 0U;
+
+		  /* get blue color */
+		  backupregister = (uint32_t)BKP_BASE;
+		  backupregister += (4 * 4U);
+
+		  alarmclock_param->blue = (*(__IO uint32_t *)(backupregister)) & (uint32_t)backup_register_mask;
+		  backupregister = 0U;
+		  
+		  /* get color index */
+		  backupregister = (uint32_t)BKP_BASE;
+		  backupregister += (5 * 4U);
+
+		  alarmclock_param->color_index = (*(__IO uint32_t *)(backupregister)) & (uint32_t)backup_register_mask;
+		  backupregister = 0U;
+
+		  /* get alarm time: hours */
+		  backupregister = (uint32_t)BKP_BASE;
+		  backupregister += (6 * 4U);
+
+		  alarmclock_param->alarmstructure.AlarmTime.Hours = (*(__IO uint32_t *)(backupregister)) & (uint32_t)backup_register_mask;
+		  backupregister = 0U;
+
+		  /* get alarm time: minutes */
+		  backupregister = (uint32_t)BKP_BASE;
+		  backupregister += (7 * 4U);
+
+		  alarmclock_param->alarmstructure.AlarmTime.Minutes = (*(__IO uint32_t *)(backupregister)) & (uint32_t)backup_register_mask;
+		  backupregister = 0U;
+
+		  /* get alarm time: seconds */
+		  backupregister = (uint32_t)BKP_BASE;
+		  backupregister += (8 * 4U);
+
+		  alarmclock_param->alarmstructure.AlarmTime.Seconds = (*(__IO uint32_t *)(backupregister)) & (uint32_t)backup_register_mask;
+		  backupregister = 0U;
+
+		  /* Enable and set RTC interrupt for alarm function */
+		  HAL_NVIC_SetPriority(RTC_Alarm_IRQn, 1, 0);
+		  HAL_NVIC_EnableIRQ(RTC_Alarm_IRQn);
+	  }
+}
+
+/**
+  * @brief  this function is used to set color in the backup register BKP_DR
+  * @param  None
+  * @retval None
+  */
+void set_clock_preferences(Alarmclock *alarmclock_param){
+	  uint32_t tmp = 0U;
+	  uint32_t backup_register_mask = 0x000000FF;
+
+	  /* set red color */
+	  tmp = (uint32_t)BKP_BASE;
+	  tmp += (2 * 4U);
+
+	  *(__IO uint32_t *) tmp = alarmclock_param->red & backup_register_mask;
+	  tmp = 0U;
+
+	  /* set green color */
+	  tmp = (uint32_t)BKP_BASE;
+	  tmp += (3 * 4U);
+
+	  *(__IO uint32_t *) tmp =  alarmclock_param->green & backup_register_mask;
+	  tmp = 0U;
+
+	  /* set blue color */
+	  tmp = (uint32_t)BKP_BASE;
+	  tmp += (4 * 4U);
+
+	  *(__IO uint32_t *) tmp = alarmclock_param->blue & backup_register_mask;
+	  tmp = 0U;
+	  
+	  /* set color index */
+	  tmp = (uint32_t)BKP_BASE;
+	  tmp += (5 * 4U);
+
+	  *(__IO uint32_t *) tmp = alarmclock_param->color_index & backup_register_mask;
+	  tmp = 0U;
+
+	  /* set alarm: hours */
+	  tmp = (uint32_t)BKP_BASE;
+	  tmp += (6 * 4U);
+
+	  *(__IO uint32_t *) tmp = alarmclock_param->alarmstructure.AlarmTime.Hours & backup_register_mask;
+	  tmp = 0U;
+
+	  /* set alarm: minutes */
+	  tmp = (uint32_t)BKP_BASE;
+	  tmp += (7 * 4U);
+
+	  *(__IO uint32_t *) tmp = alarmclock_param->alarmstructure.AlarmTime.Minutes & backup_register_mask;
+	  tmp = 0U;
+
+	  /* set alarm: seconds */
+	  tmp = (uint32_t)BKP_BASE;
+	  tmp += (8 * 4U);
+
+	  *(__IO uint32_t *) tmp = alarmclock_param->alarmstructure.AlarmTime.Seconds & backup_register_mask;
+	  tmp = 0U;
+}
+
+/**
+  * @brief  this function increments the color
+  * @param  None
+  * @retval None
+  */
+void increment_clock_color(Alarmclock *alarmclock_param){
+	if(alarmclock_param->color_index < 3){
+		alarmclock_param->color_index++;
+	}else{
+		alarmclock_param->color_index = 0;
+	}
+	alarmclock_param->red = color_pattern[alarmclock_param->color_index][0];
+	alarmclock_param->green = color_pattern[alarmclock_param->color_index][1];
+	alarmclock_param->blue = color_pattern[alarmclock_param->color_index][2];
+}
+
+/**
+  * @brief  this function increments the color
+  * @param  None
+  * @retval None
+  */
+void decrement_clock_color(Alarmclock *alarmclock_param){
+	if(alarmclock_param->color_index > 0){
+		alarmclock_param->color_index--;
+	}else{
+		alarmclock_param->color_index = 3;
+	}
+	alarmclock_param->red = color_pattern[alarmclock_param->color_index][0];
+	alarmclock_param->green = color_pattern[alarmclock_param->color_index][1];
+	alarmclock_param->blue = color_pattern[alarmclock_param->color_index][2];
+}
+
+/**
+  * @brief  this function inits the alarmclock
+  * @param  None
+  * @retval None
+  */
+void init_clock(Alarmclock *alarmclock_param){
+	/* load preferences from the BKP register, time is loadet with init_RTc() on the bottom of this function */
+	get_clock_preferences(alarmclock_param);
+	/* set system mode */
+	alarmclock_param->mode = MODE_TIME_CLOCK;
+	/* initialize RTC (also load time information from BKP register) */
+	init_RTC(alarmclock_param);
+}
 
 /**
   * @brief RTC MSP Initialization

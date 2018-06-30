@@ -46,7 +46,7 @@ void init_buzzer(uint16_t beep_period){
 	/* init button gpio */
 	__HAL_RCC_GPIOB_CLK_ENABLE();									//enable clock on the bus
 	GPIO_InitTypeDef GPIO_InitStruct_Buzzer;
-	GPIO_InitStruct_Buzzer.Pin = 		BUZZER_PIN; 			// select 12th pin (PB11)
+	GPIO_InitStruct_Buzzer.Pin = 		BUZZER_PIN; 				// select 12th pin (PB11)
 	GPIO_InitStruct_Buzzer.Mode = 		GPIO_MODE_OUTPUT_PP; 		// configure as push pull outputt
 	GPIO_InitStruct_Buzzer.Speed = 		GPIO_SPEED_FREQ_MEDIUM;
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct_Buzzer);					// setting GPIO registers
@@ -73,7 +73,7 @@ void init_buzzer_timer(uint16_t beep_period){
 	 */
 	TIM3_Handle.Instance = TIM3;
 	TIM3_Handle.Init.Prescaler         = 30999;				// divide tim clock with 30999 to get 1 kHz (1 ms) --- (32 Mhz / 1 kHz) - 1 = 30999
-	TIM3_Handle.Init.Period            = beep_period / 2;		// divided by 2 because every timer update event (e.g. 2 Hz = 500 ms) the led shall toggle
+	TIM3_Handle.Init.Period            = beep_period / 2;	// divided by 2 because every timer update event (e.g. 2 Hz = 500 ms) the led shall toggle
 	TIM3_Handle.Init.ClockDivision     = 0;
 	TIM3_Handle.Init.CounterMode       = TIM_COUNTERMODE_UP;
 	if (HAL_TIM_Base_Init(&TIM3_Handle) != HAL_OK){
@@ -83,7 +83,7 @@ void init_buzzer_timer(uint16_t beep_period){
 	/* clear interrupt pending bits */
 	__HAL_TIM_CLEAR_IT(&TIM3_Handle, TIM_IT_UPDATE);
 
-	/* set auto counter register to 0 */
+	/* set counter register to 0 */
 	(&TIM3_Handle)->Instance->CNT = 0;
 
 	/* Enable and set TIM3 Interrupt */
@@ -107,7 +107,7 @@ void BUZZER_TIM3_callback(){
   * @retval None
   */
 void buzzer_start(){
-	/* set auto counter register to 0 */
+	/* set counter register to 0 */
 	(&TIM3_Handle)->Instance->CNT = 0;
 	/* start buzzer time */
 	HAL_TIM_Base_Start_IT(&TIM3_Handle);

@@ -1,8 +1,6 @@
 /* Includes */
 #include "stm32f1xx.h"
 
-/* Exported types */
-
 /* Exported constants */
 
 /* Exported macro */

@@ -61,8 +61,6 @@ DMA_HandleTypeDef 		DMA_HandleStruct_UEV;
 DMA_HandleTypeDef 		DMA_HandleStruct_CC1;
 DMA_HandleTypeDef 		DMA_HandleStruct_CC2;
 
-
-
 /**
   * @brief  initialization of peripherals used for ws2812 leds
   * @note   None
@@ -545,37 +543,39 @@ void WS2812_led_test(){
 		/* fill the complete buffer at first round */
 		if(i == 0){
 			for(uint8_t y = 0; y<ROW; y++){
+				/* set the color with the color wheel function */
 				for(uint8_t s=0; s<15; s++){
 					WS2812_color_wheel_plus(&redtest, &greentest, &bluetest);
 				}
 				for(uint16_t x = 0; x<COL; x++){
-					/* fill complete buffer */
-					clock_background_framebuffer[(y*11*3)+(x*3)] = redtest;
-					clock_background_framebuffer[(y*11*3)+(x*3)+1] = greentest;
-					clock_background_framebuffer[(y*11*3)+(x*3)+2] = bluetest;
+					/* fill buffer for first frame */
+					clock_background_framebuffer[(y*COL*3)+(x*3)] = redtest;
+					clock_background_framebuffer[(y*COL*3)+(x*3)+1] = greentest;
+					clock_background_framebuffer[(y*COL*3)+(x*3)+2] = bluetest;
 				}
 			}
 		}else{
+			/* set the color with the color wheel function */
 			for(uint8_t s=0; s<15; s++){
 				WS2812_color_wheel_plus(&redtest, &greentest, &bluetest);
 			}
 			/* shift 1 row up */
-			for(uint16_t j=0; j<10; j++){
-				for(uint16_t s=0; s<33; s++){
-					clock_background_framebuffer[j*11*3+s] = clock_background_framebuffer[(j+1)*11*3+s];
+			for(uint16_t j=0; j<ROW; j++){
+				for(uint16_t s=0; s<3*COL; s++){
+					clock_background_framebuffer[j*COL*3+s] = clock_background_framebuffer[(j+1)*COL*3+s];
 				}
 			}
 			/* write new color in bottom row */
-			for(uint16_t j=0; j<11; j++){
-				clock_background_framebuffer[(10*11*3)+(j*3)] = redtest;
-				clock_background_framebuffer[(10*11*3)+(j*3)+1] = greentest;
-				clock_background_framebuffer[(10*11*3)+(j*3)+2] = bluetest;
+			for(uint16_t j=0; j<COL; j++){
+				clock_background_framebuffer[(ROW*COL*3)+(j*3)] = redtest;
+				clock_background_framebuffer[(ROW*COL*3)+(j*3)+1] = greentest;
+				clock_background_framebuffer[(ROW*COL*3)+(j*3)+2] = bluetest;
 			}
 		}
 		/* write buffer into buffer... lol */
 		for(uint8_t y = 0; y<ROW; y++){
 			for(uint16_t x = 0; x<COL; x++){
-				WS2812_framedata_setPixel(y, x, (uint8_t)clock_background_framebuffer[(y*11*3)+(x*3)], (uint8_t)clock_background_framebuffer[(y*11*3)+(x*3)+1], (uint8_t)clock_background_framebuffer[(y*11*3)+(x*3)+2]);
+				WS2812_framedata_setPixel(y, x, (uint8_t)clock_background_framebuffer[(y*COL*3)+(x*3)], (uint8_t)clock_background_framebuffer[(y*COL*3)+(x*3)+1], (uint8_t)clock_background_framebuffer[(y*COL*3)+(x*3)+2]);
 			}
 		}
 		sendbuf_WS2812();

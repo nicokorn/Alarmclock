@@ -222,11 +222,18 @@ void EXTI2_IRQHandler(void){
   */
 void EXTI15_10_IRQHandler(void){
 	/* EXTI line interrupt detected */
-	if(__HAL_GPIO_EXTI_GET_IT(BUTTON_SNOOZE || SWITCH_ALARM) != RESET){
+	if(__HAL_GPIO_EXTI_GET_IT(BUTTON_SNOOZE) != RESET){
 		/* clear interrupt pending bits */
-		__HAL_GPIO_EXTI_CLEAR_IT(BUTTON_SNOOZE || SWITCH_ALARM);
+		__HAL_GPIO_EXTI_CLEAR_IT(BUTTON_SNOOZE);
 		/* call callback */
-		HAL_GPIO_EXTI_Callback(BUTTON_SNOOZE || SWITCH_ALARM);
+		HAL_GPIO_EXTI_Callback(BUTTON_SNOOZE);
+	}
+	/* EXTI line interrupt detected */
+	if(__HAL_GPIO_EXTI_GET_IT(SWITCH_ALARM) != RESET){
+		/* clear interrupt pending bits */
+		__HAL_GPIO_EXTI_CLEAR_IT(SWITCH_ALARM);
+		/* call callback */
+		HAL_GPIO_EXTI_Callback(SWITCH_ALARM);
 	}
 }
 
@@ -263,7 +270,7 @@ void TIM3_IRQHandler(void){
   * @param  None
   * @retval None
   */
-void RTC_IRQHandler(void){
+void RTC_Alarm_IRQHandler(void){
 	  if(__HAL_RTC_ALARM_GET_IT_SOURCE(&RTC_Handle, RTC_IT_ALRA))
 	  {
 	    /* Get the status of the Interrupt */

@@ -42,8 +42,10 @@
 #include "stm32f1xx_it.h"
 
 /* External variables --------------------------------------------------------*/
-extern TIM_HandleTypeDef    TIM3_Handle;
+extern TIM_HandleTypeDef    TIM4_Handle;
+//extern TIM_HandleTypeDef    TIM4_Handle;
 extern RTC_HandleTypeDef 	RTC_Handle;
+extern ADC_HandleTypeDef 	ADCHandle;
    
 /** @addtogroup STM32F1xx_HAL_Examples
   * @{
@@ -251,19 +253,17 @@ void TIM2_IRQHandler(void){
   * @param  None
   * @retval None
   */
-void TIM3_IRQHandler(void){
-	/* TIM3 Update event */
-	if(__HAL_TIM_GET_FLAG(&TIM3_Handle, TIM_FLAG_UPDATE) != RESET){
-		if(__HAL_TIM_GET_IT_SOURCE(&TIM3_Handle, TIM_IT_UPDATE) !=RESET){
+void TIM4_IRQHandler(void){
+	/* TIM4 Update event */
+	if(__HAL_TIM_GET_FLAG(&TIM4_Handle, TIM_FLAG_UPDATE) != RESET){
+		if(__HAL_TIM_GET_IT_SOURCE(&TIM4_Handle, TIM_IT_UPDATE) !=RESET){
 			/* clear interrupt pending bits */
-			__HAL_TIM_CLEAR_IT(&TIM3_Handle, TIM_IT_UPDATE);
+			__HAL_TIM_CLEAR_IT(&TIM4_Handle, TIM_IT_UPDATE);
 			/* call callback */
-			//HAL_TIM_PeriodElapsedCallback(&TimHandle);
-			BUZZER_TIM3_callback();
+			BUZZER_TIM4_callback();
 		}
 	}
 }
-
 
 /**
   * @brief  This function handles RTC wakeup interrupt request.
@@ -290,5 +290,24 @@ void RTC_Alarm_IRQHandler(void){
 	  /* Change RTC state */
 	  RTC_Handle.State = HAL_RTC_STATE_READY;
 }
+
+/**
+  * @brief  This function handles ADC interrupt request.
+  * @param  None
+  * @retval None
+  */
+void ADC1_2_IRQHandler(void){
+	HAL_ADC_IRQHandler(&ADCHandle);
+}
+
+/**
+* @brief  This function handles DMA interrupt request.
+* @param  None
+* @retval None
+*/
+void DMA1_Channel1_IRQHandler(void){
+	HAL_DMA_IRQHandler(ADCHandle.DMA_Handle);
+}
+
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

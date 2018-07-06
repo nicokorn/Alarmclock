@@ -1,3 +1,7 @@
+/* Define to prevent recursive inclusion -------------------------------------*/
+#ifndef __WS2812_H
+#define __WS2812_H
+
 /* Includes */
 #include "stm32f1xx.h"
 
@@ -28,3 +32,5 @@ void WS2812_background_matrix(void);
 void WS2812_background_equalizer(void);
 void WS2812_set_clock_fx(uint8_t *fx_mode, uint32_t *counter, uint8_t *red, uint8_t *green, uint8_t *blue);
 void WS2812_TIM2_callback(void);
+
+#endif

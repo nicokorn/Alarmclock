@@ -29,23 +29,42 @@
 // ----------------------------------------------------------------------------
 
 #include "lightsensor.h"
-#include "ws2812.h"
-#include "stm32f1xx.h"
 
-/* typedefs */
-static	RCC_PeriphCLKInitTypeDef  	PeriphClkInit;
-static 	ADC_HandleTypeDef 			ADCHandle;
-static	ADC_ChannelConfTypeDef 		ADCChConfig;
+/* defines */
+#define BUFFERSIZE			64
+
+/* private variables */
+static uint16_t 			adc_buffer[BUFFERSIZE];
+
+/* global variables */
+ADC_HandleTypeDef 			ADCHandle;
+RCC_PeriphCLKInitTypeDef  	PeriphClkInit;
+ADC_ChannelConfTypeDef 		ADCChConfig;
+DMA_HandleTypeDef 			DMA_HandleStruct;
+GPIO_InitTypeDef 			GPIO_InitStruct_Light;
+uint16_t 					ambientlight_factor, adc_raw;
+
+/* private variables */
+static TIM_HandleTypeDef    TIM3_Handle;
 
 /**
   * @brief  initialization of lightsensor
   * @note   None
   * @retval None
   */
-void init_lightsensor(){
+void init_lightsensor(Alarmclock *alarmclock_param){
+	/* init buffer for adc filtering */
+	init_filter();
+	/* safe address into alarmclock object */
+	alarmclock_param->ambient_light_factor = &ambientlight_factor;
 	/* init peripherals for lightsensor */
 	init_gpio_lightsensor();
+	init_dma_lightsensor();
 	init_adc_lightsensor();
+	init_timer_lightsensor();
+	/* start adc */
+	HAL_TIM_Base_Start(&TIM3_Handle);
+	HAL_ADC_Start_DMA(&ADCHandle, &adc_raw, 1);
 }
 
 /**
@@ -54,8 +73,6 @@ void init_lightsensor(){
   * @retval None
   */
 void init_gpio_lightsensor(){
-	/* variables */
-	GPIO_InitTypeDef GPIO_InitStruct_Light;
 	/* init gpio input pin as analog*/
 	__HAL_RCC_GPIOA_CLK_ENABLE();								//enable clock on the bus
 	GPIO_InitStruct_Light.Pin = 	(uint16_t)0x0080U; 			// select 8th pin  (PA7)
@@ -69,32 +86,39 @@ void init_gpio_lightsensor(){
   * @note   None
   * @retval None
   */
-void init_adc_lightsensor(){
-	/* Enable and set up clock of ADCx peripheral */
-	__HAL_RCC_ADC1_CLK_ENABLE();
+void init_timer_lightsensor(){
+	/* enable TIM3 clock */
+	__HAL_RCC_TIM3_CLK_ENABLE();
 
-	/* configure adc prescaler to meet 12 mhz for the adc clock (14 mhz is the max) */
-	PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC;
-	PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
-	HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit);
+	/* for cc configuration */
+	TIM_MasterConfigTypeDef sMasterConfig;
 
-	/* configure adc */
-	ADCHandle.Instance = ADC1;
-	ADCHandle.Init.ContinuousConvMode = DISABLE;					// continuous mode disabled to have only 1 conversion at each conversion trig
-	ADCHandle.Init.DiscontinuousConvMode = DISABLE;
-	ADCHandle.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-	ADCHandle.Init.ScanConvMode = ADC_SCAN_DISABLE;					// single mode, only rank 1
-	ADCHandle.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-	HAL_ADC_Init(&ADCHandle);
+	/* initialize TIM3 peripheral as follows:
+		+ Period = 20 ms
+		+ Prescaler = 30999
+		+ ClockDivision = 0
+		+ Counter direction = Up
+	 */
+	TIM3_Handle.Instance 				= TIM3;
+	TIM3_Handle.Init.Prescaler         	= 30999;			// divide tim clock with 30999 to get 1 kHz (1 ms) --- (32 Mhz / 1 kHz) - 1 = 30999
+	TIM3_Handle.Init.Period            	= 20;				// count up to 20 to get 50 Hz
+	TIM3_Handle.Init.ClockDivision     	= 0;
+	TIM3_Handle.Init.CounterMode      	= TIM_COUNTERMODE_UP;
+	if (HAL_TIM_Base_Init(&TIM3_Handle) != HAL_OK){
+		/* stay here if an error happened */
+	}
 
-	/* Channel configuration */
-	ADCChConfig.Channel = ADC_CHANNEL_8;
-	ADCChConfig.Rank = ADC_REGULAR_RANK_1;
-	ADCChConfig.SamplingTime = ADC_SAMPLETIME_239CYCLES_5;//ADC_SAMPLETIME_1CYCLE_5;
-	HAL_ADC_ConfigChannel(&ADCHandle, &ADCChConfig);
+	/* clear interrupt pending bits */
+	__HAL_TIM_CLEAR_IT(&TIM3_Handle, TIM_IT_UPDATE);
 
-	/* calibration */
-	while(HAL_ADCEx_Calibration_Start(&ADCHandle) != HAL_OK);
+	/* set counter register to 0 */
+	(&TIM3_Handle)->Instance->CNT = 0;
+
+	sMasterConfig.MasterOutputTrigger 	= TIM_TRGO_UPDATE;
+	sMasterConfig.MasterSlaveMode 		= TIM_MASTERSLAVEMODE_DISABLE;
+	if (HAL_TIMEx_MasterConfigSynchronization(&TIM3_Handle, &sMasterConfig) != HAL_OK){
+		//error
+	}
 }
 
 /**
@@ -103,10 +127,66 @@ void init_adc_lightsensor(){
   * @retval None
   */
 void init_dma_lightsensor(){
-	/* variables */
+	/* activate bus on which dma1 is connected */
+	__HAL_RCC_DMA1_CLK_ENABLE();
 
-	/* init gpio input pin as analog*/
+	/* DMA1 Channel2 configuration ----------------------------------------------*/
+	DMA_HandleStruct.Instance 					= DMA1_Channel1;
+	DMA_HandleStruct.Init.Direction 			= DMA_PERIPH_TO_MEMORY;
+	DMA_HandleStruct.Init.PeriphInc 			= DMA_PINC_DISABLE;
+	DMA_HandleStruct.Init.MemInc 				= DMA_MINC_ENABLE;
+	DMA_HandleStruct.Init.Mode 					= DMA_CIRCULAR;
+	DMA_HandleStruct.Init.PeriphDataAlignment 	= DMA_PDATAALIGN_HALFWORD;
+	DMA_HandleStruct.Init.MemDataAlignment 		= DMA_MDATAALIGN_HALFWORD;
+	DMA_HandleStruct.Init.Priority 				= DMA_PRIORITY_HIGH;
+	HAL_DMA_DeInit(&DMA_HandleStruct);
+	if(HAL_DMA_Init(&DMA_HandleStruct) != HAL_OK){
+		while(1){
+			//error
+		}
+	}
 
+    __HAL_LINKDMA(&ADCHandle,DMA_Handle,DMA_HandleStruct);
+    HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 6, 0);
+    HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
+}
+
+/**
+  * @brief  initialization of gpio for adc
+  * @note   None
+  * @retval None
+  */
+void init_adc_lightsensor(){
+	/* Enable and set up clock of ADCx peripheral */
+	__HAL_RCC_ADC1_CLK_ENABLE();
+
+	/* configure adc prescaler to meet 12 mhz for the adc clock (14 mhz is the max) */
+	PeriphClkInit.PeriphClockSelection 			= RCC_PERIPHCLK_ADC;
+	PeriphClkInit.AdcClockSelection 			= RCC_CFGR_ADCPRE_DIV8;
+	HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit);
+
+	/* configure adc */
+	ADCHandle.Instance 							= ADC1;
+	ADCHandle.Init.ContinuousConvMode 			= DISABLE;					// continuous mode enabled = permanent sampling and converting
+	ADCHandle.Init.DiscontinuousConvMode 		= DISABLE;
+	ADCHandle.Init.DataAlign 					= ADC_DATAALIGN_RIGHT;
+	ADCHandle.Init.ScanConvMode 				= ADC_SCAN_DISABLE;			// Sequencer disabled (ADC conversion on only 1 channel: channel set on rank 1)
+	ADCHandle.Init.ExternalTrigConv 			= ADC1_2_EXTERNALTRIG_T3_TRGO;
+	HAL_ADC_Init(&ADCHandle);
+
+	/* Channel configuration */
+	ADCChConfig.Channel 						= ADC_CHANNEL_7;
+	ADCChConfig.Rank 							= ADC_REGULAR_RANK_1;
+	ADCChConfig.SamplingTime 					= ADC_SAMPLETIME_28CYCLES_5;
+	HAL_ADC_ConfigChannel(&ADCHandle, &ADCChConfig);
+
+	/* calibration */
+	while(HAL_ADCEx_Calibration_Start(&ADCHandle) != HAL_OK);
+
+	/* NVIC configuration for ADC interrupt */
+	/* Priority: high-priority */
+	HAL_NVIC_SetPriority(ADC1_2_IRQn, 5, 0);
+	HAL_NVIC_EnableIRQ(ADC1_2_IRQn);
 }
 
 /**
@@ -135,4 +215,44 @@ void stop_lightsensor_adc_conversion(){
   */
 void get_lightsensor_adc_conversion(uint32_t *adc_conversion){
 	*adc_conversion = HAL_ADC_GetValue(&ADCHandle);
+}
+
+/* Callback function for the adc interrupt */
+/**
+ * @brief adc conversion complete callback
+ * @param ADC_HandleTypeDef* hadc
+ * @retval None
+ */
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
+	uint32_t array_cumulus = 0;
+	uint16_t array_averaged = 0;
+
+	/* init the filter with zeros */
+	for(uint16_t i = BUFFERSIZE-1; i>0; i--){
+		adc_buffer[i] = adc_buffer[i-1];
+		array_cumulus += adc_buffer[i];
+	}
+	adc_buffer[0] = adc_raw;
+	array_cumulus += adc_buffer[0];
+
+	/* divide by 64 */
+	array_averaged = array_cumulus >> 6;
+
+	if(array_averaged < 5){
+		ambientlight_factor = 1;
+	}else{
+		ambientlight_factor = 8;
+	}
+}
+
+/**
+  * @brief  initialization of the filter for adc values
+  * @note   None
+  * @retval None
+  */
+void init_filter(){
+	/* init the filter with zeros */
+	for(uint16_t i = 0; i<BUFFERSIZE; i++){
+		adc_buffer[i] = 0;
+	}
 }

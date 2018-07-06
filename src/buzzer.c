@@ -35,7 +35,7 @@
 /* global variables */
 /* Configuration struct for the timer. This variable needs to be declared global
  * because it's also used in the interrupt handler module */
-TIM_HandleTypeDef    		TIM3_Handle;
+TIM_HandleTypeDef	TIM4_Handle;
 
 /**
   * @brief  initialization of gpio output for the buzzer
@@ -62,33 +62,33 @@ void init_buzzer(uint16_t beep_period){
   * @retval None
   */
 void init_buzzer_timer(uint16_t beep_period){
-	/* enable TIM3 clock */
-	__HAL_RCC_TIM3_CLK_ENABLE();
+	/* enable TIM4 clock */
+	__HAL_RCC_TIM4_CLK_ENABLE();
 
-	/* initialize TIM3 peripheral as follows:
-		+ Period = blink_period / 2 (e.g. to have an standard output frequency equal to 2 HZ)
+	/* initialize TIM4 peripheral as follows:
+		+ Period = beep_period / 2 (e.g. to have an standard output frequency equal to 2 HZ)
 		+ Prescaler = 0
 		+ ClockDivision = 0
 		+ Counter direction = Up
 	 */
-	TIM3_Handle.Instance = TIM3;
-	TIM3_Handle.Init.Prescaler         = 30999;				// divide tim clock with 30999 to get 1 kHz (1 ms) --- (32 Mhz / 1 kHz) - 1 = 30999
-	TIM3_Handle.Init.Period            = beep_period / 2;	// divided by 2 because every timer update event (e.g. 2 Hz = 500 ms) the led shall toggle
-	TIM3_Handle.Init.ClockDivision     = 0;
-	TIM3_Handle.Init.CounterMode       = TIM_COUNTERMODE_UP;
-	if (HAL_TIM_Base_Init(&TIM3_Handle) != HAL_OK){
+	TIM4_Handle.Instance = TIM4;
+	TIM4_Handle.Init.Prescaler         = 31999;				// divide tim clock with 30999 to get 1 kHz (1 ms) --- (32 Mhz / 1 kHz) - 1 = 30999
+	TIM4_Handle.Init.Period            = beep_period / 2;	// divided by 2 because every timer update event (e.g. 2 Hz = 500 ms) the led shall toggle
+	TIM4_Handle.Init.ClockDivision     = 0;
+	TIM4_Handle.Init.CounterMode       = TIM_COUNTERMODE_UP;
+	if (HAL_TIM_Base_Init(&TIM4_Handle) != HAL_OK){
 		/* stay here if an error happened */
 	}
 
 	/* clear interrupt pending bits */
-	__HAL_TIM_CLEAR_IT(&TIM3_Handle, TIM_IT_UPDATE);
+	__HAL_TIM_CLEAR_IT(&TIM4_Handle, TIM_IT_UPDATE);
 
 	/* set counter register to 0 */
-	(&TIM3_Handle)->Instance->CNT = 0;
+	(&TIM4_Handle)->Instance->CNT = 0;
 
 	/* Enable and set TIM3 Interrupt */
-	HAL_NVIC_SetPriority(TIM3_IRQn, 1, 0);
-	HAL_NVIC_EnableIRQ(TIM3_IRQn);
+	HAL_NVIC_SetPriority(TIM4_IRQn, 1, 0);
+	HAL_NVIC_EnableIRQ(TIM4_IRQn);
 }
 
 /**
@@ -96,9 +96,16 @@ void init_buzzer_timer(uint16_t beep_period){
   * @param  TIM_HandleTypeDef
   * @retval None
   */
-void BUZZER_TIM3_callback(){
+void BUZZER_TIM4_callback(){
+	static uint16_t beep_rounds = 0;
 	/* toggle buzzer pin */
-	GPIOB->ODR ^= BUZZER_PIN;
+	if(beep_rounds < 200){
+		GPIOB->ODR ^= BUZZER_PIN;
+		beep_rounds++;
+	}else{
+		buzzer_stop();
+		beep_rounds = 0;
+	}
 }
 
 /**
@@ -108,9 +115,9 @@ void BUZZER_TIM3_callback(){
   */
 void buzzer_start(){
 	/* set counter register to 0 */
-	(&TIM3_Handle)->Instance->CNT = 0;
+	(&TIM4_Handle)->Instance->CNT = 0;
 	/* start buzzer time */
-	HAL_TIM_Base_Start_IT(&TIM3_Handle);
+	HAL_TIM_Base_Start_IT(&TIM4_Handle);
 	/* switch on buzzer */
 	GPIOB->BSRR ^= BUZZER_PIN;
 }
@@ -122,7 +129,7 @@ void buzzer_start(){
   */
 void buzzer_stop(){
 	/* stop buzzer time */
-	HAL_TIM_Base_Stop_IT(&TIM3_Handle);
+	HAL_TIM_Base_Stop_IT(&TIM4_Handle);
 	/* switch off buzzer */
 	GPIOB->BRR ^= BUZZER_PIN;
 }

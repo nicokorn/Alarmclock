@@ -32,18 +32,25 @@
 #include "stm32f1xx.h"
 
 /**
-  * @brief  initialization of touch buttons
+  * @brief  initialization of touch and switch buttons
   * @note   None
   * @retval None
   */
 void init_buttons(){
-	/* init button gpio */
-	__HAL_RCC_GPIOB_CLK_ENABLE();																	//enable clock on the bus
-	GPIO_InitTypeDef GPIO_InitStruct_Button;
-	GPIO_InitStruct_Button.Pin = 	BUTTON_MODE | BUTTON_PLUS | BUTTON_MINUS | BUTTON_SNOOZE; 	// select pin 1,2,3,13
-	GPIO_InitStruct_Button.Mode = 	GPIO_MODE_IT_FALLING; 											// configure pins for pp o,utput
-	GPIO_InitStruct_Button.Pull = 	GPIO_NOPULL;													// state clear because line either set up to 3.3V or down to GND
-	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct_Button);													// setting GPIO registers
+	/* init push button gpio */
+	__HAL_RCC_GPIOB_CLK_ENABLE();																		//enable clock on the bus
+	GPIO_InitTypeDef GPIO_InitStruct_touch_btn;
+	GPIO_InitStruct_touch_btn.Pin = 	BUTTON_MODE | BUTTON_PLUS | BUTTON_MINUS | BUTTON_SNOOZE; 		// select pin 1,2,3,13
+	GPIO_InitStruct_touch_btn.Mode = 	GPIO_MODE_IT_FALLING; 											// configure pins for pp o,utput
+	GPIO_InitStruct_touch_btn.Pull = 	GPIO_NOPULL;													// state clear because line either set up to 3.3V or down to GND
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct_touch_btn);													// setting GPIO registers
+
+	/* init switch button gpio */
+	GPIO_InitTypeDef GPIO_InitStruct_switch_btn;
+	GPIO_InitStruct_switch_btn.Pin = 	SWITCH_ALARM; 													// select pin 11
+	GPIO_InitStruct_switch_btn.Mode = 	GPIO_MODE_IT_RISING_FALLING; 									// configure pins for IT input
+	GPIO_InitStruct_switch_btn.Pull = 	GPIO_NOPULL;													// state clear because line either set up to 3.3V or down to GND
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct_switch_btn);													// setting GPIO registers
 
 	/* Enable and set EXTI lines Interrupt */
 	HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
@@ -54,4 +61,34 @@ void init_buttons(){
 	HAL_NVIC_EnableIRQ(EXTI2_IRQn);
 	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
 	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+}
+
+/**
+  * @brief  enable buttons
+  * @note   None
+  * @retval None
+  */
+void enable_buttons(){
+	/* Enable and set EXTI lines Interrupt */
+	HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+	HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+	HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+}
+
+/**
+  * @brief  enable buttons
+  * @note   None
+  * @retval None
+  */
+void disable_buttons(){
+	/* Enable and set EXTI lines Interrupt */
+	HAL_NVIC_DisableIRQ(EXTI0_IRQn);
+	HAL_NVIC_DisableIRQ(EXTI1_IRQn);
+	HAL_NVIC_DisableIRQ(EXTI2_IRQn);
+	HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
 }

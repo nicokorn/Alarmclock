@@ -35,7 +35,6 @@
 #include "ws2812.h"
 #include "clock.h"
 #include "button.h"
-#include "switch.h"
 #include "buzzer.h"
 #include "lightsensor.h"
 

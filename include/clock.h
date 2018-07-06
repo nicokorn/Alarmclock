@@ -1,6 +1,11 @@
+/* Define to prevent recursive inclusion -------------------------------------*/
+#ifndef __CLOCK_H
+#define __CLOCK_H
+
 /* Includes */
 #include "ws2812.h"
 #include "buzzer.h"
+#include "button.h"
 #include "stm32f1xx.h"
 
 /* Exported types */
@@ -47,6 +52,10 @@ typedef struct {
 }Number;
 
 typedef struct {
+	uint8_t 	letter_construction[3][7];	// a letter has a resolution of 7*3 Pixels
+}Letter;
+
+typedef struct {
 	Wordclock_Mode 		mode;
 	RTC_TimeTypeDef 	timestructure;
 	RTC_DateTypeDef 	datestructure;
@@ -56,6 +65,7 @@ typedef struct {
 	uint8_t				blue;
 	uint8_t				color_index;
 	uint16_t			event;
+	uint16_t*			ambient_light_factor;
 }Alarmclock;
 
 /* Exported functions */
@@ -69,7 +79,8 @@ void led_alarm_hour_plus(Alarmclock *alarmclock_param);
 void led_alarm_hour_minus(Alarmclock *alarmclock_param);
 void led_alarm_minute_plus(Alarmclock *alarmclock_param);
 void led_alarm_minute_minus(Alarmclock *alarmclock_param);
-void draw_number(Number number, uint16_t x_offset, uint8_t y_offset, uint8_t *red, uint8_t *green, uint8_t *blue);
+void draw_number(Number number, uint16_t x_offset, uint8_t y_offset, uint8_t *red, uint8_t *green, uint8_t *blue, uint16_t *ambient_factor);
+void draw_letter(Letter letter, uint16_t x_offset, uint8_t y_offset, uint8_t *red, uint8_t *green, uint8_t *blue, uint16_t *ambient_factor);
 void RTC_CalendarConfig(Alarmclock *alarmclock_param);
 void RTC_CalendarShow(uint8_t *showtime, uint8_t *showdate);
 void draw_hh_mm(Time_Setup time, Alarmclock *alarmclock_param);
@@ -83,6 +94,8 @@ void setup_clock_blinking(Alarmclock *alarmclock_param);
 void get_clock_preferences(Alarmclock *alarmclock_param);
 void set_clock_preferences(Alarmclock *alarmclock_param);
 void refresh_clock_display(Alarmclock *alarmclock_param);
+void draw_mode(Alarmclock *alarmclock_param);
+void read_alarm_switch(Alarmclock *alarmclock_param);
+void draw_lux(Alarmclock *alarmclock_param);
 
-
-
+#endif

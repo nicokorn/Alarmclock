@@ -30,19 +30,22 @@
 #include "main.h"
 
 /* defines */
-#define BUZZER_BUZZ_PERIOD			1000 // in ms
-#define EVENT_QUEUE_LENGTH			11 // length of event buffer
+#define BUZZER_BUZZ_PERIOD			3000 	// in ms
+#define EVENT_QUEUE_LENGTH			11 		// length of event buffer
 
 /* variables */
 static uint16_t			event_queue[EVENT_QUEUE_LENGTH];
 static uint16_t			queue_index;
+static uint8_t			isr_enabled;
 static Queue_Lock		queue_lock;
 static Alarmclock		alarmclock;
 
 /* function prototypes */
 void SystemClock_Config(void);
-uint16_t unqeue_next_event();
-void init_event_queue();
+static uint16_t unqeue_next_event();
+static void init_event_queue();
+void isr_enable();
+void isr_disable();
 
 
 /**
@@ -77,7 +80,7 @@ int main(void){
 	init_buzzer(BUZZER_BUZZ_PERIOD);
 
 	/* initialize lightsensor */
-	//init_lightsensor();
+	init_lightsensor(&alarmclock);
 
 	/* initialize RTC and init mode */
 	init_clock(&alarmclock);
@@ -104,10 +107,12 @@ int main(void){
 												break;
 												case BUTTON_SNOOZE: buzzer_stop();
 												break;
-												case SWITCH_ALARM:;
+												case SWITCH_ALARM:	;
 												break;
 											}
+											read_alarm_switch(&alarmclock);			// check alarm switch
 											refresh_clock_display(&alarmclock);		// refresh clock
+
 			break;
 			case MODE_TIME_SET_CLOCK_h:		switch(alarmclock.event){
 												case BUTTON_MODE:	increment_mode(&alarmclock);
@@ -170,7 +175,8 @@ int main(void){
 											setup_clock_blinking(&alarmclock);		// let the minutes blink
 			break;
 		}
-		HAL_Delay(100);
+		/* delay */
+		HAL_Delay(50);
 	}
 }
 
@@ -186,7 +192,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	/* lock the queue */
 	queue_lock = QLOCKED;
 	/* save button event into event qeue */
-	while(index < EVENT_QUEUE_LENGTH && run_flag == 1){
+	while(index < EVENT_QUEUE_LENGTH && run_flag == 1 && isr_enabled){
 		if(event_queue[index] == END_OF_QEUE){
 			event_queue[index] = GPIO_Pin;
 			event_queue[index+1] = END_OF_QEUE;
@@ -205,7 +211,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
   * @param  None
   * @retval event
   */
-uint16_t unqeue_next_event(){
+static uint16_t unqeue_next_event(){
 	uint16_t latest_event;
 	/* wait for unlocked queue */
 	while(queue_lock);
@@ -228,9 +234,28 @@ uint16_t unqeue_next_event(){
   * @param  None
   * @retval None
   */
-void init_event_queue(){
+static void init_event_queue(){
+	isr_enabled = 1;
 	event_queue[0] = END_OF_QEUE;
 	queue_lock = QUNLOCKED;
+}
+
+/**
+  * @brief  this function enables isr callback
+  * @param  None
+  * @retval event
+  */
+void isr_enable(){
+	isr_enabled = 1;
+}
+
+/**
+  * @brief  this function disables isr callback
+  * @param  None
+  * @retval event
+  */
+void isr_disable(){
+	isr_enabled = 0;
 }
 
 /**

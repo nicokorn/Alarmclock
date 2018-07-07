@@ -39,10 +39,6 @@
  * to append to the data frame for the LEDs to
  * load the received data into their registers */
 #define WS2812_DEADPERIOD 19
-/* amount of rows */
-#define ROW 7
-/* amount of columns */
-#define COL 17
 /* WS2812 GPIO output buffer size */
 #define GPIO_BUFFERSIZE COL*24
 /* background RGB color buffer size */

@@ -6,6 +6,10 @@
 #include "stm32f1xx.h"
 
 /* Exported constants */
+/* amount of rows */
+#define ROW 7
+/* amount of columns */
+#define COL 17
 
 /* Exported macro */
 

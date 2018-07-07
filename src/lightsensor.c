@@ -226,6 +226,8 @@ void get_lightsensor_adc_conversion(uint32_t *adc_conversion){
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 	uint32_t array_cumulus = 0;
 	uint16_t array_averaged = 0;
+	static const uint16_t schmitt_base_th = 11;
+	static uint16_t schmitt_ex_th = 11;
 
 	/* init the filter with zeros */
 	for(uint16_t i = BUFFERSIZE-1; i>0; i--){
@@ -238,10 +240,13 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 	/* divide by 64 */
 	array_averaged = array_cumulus >> 6;
 
-	if(array_averaged < 5){
+	/* notice! a pointer from the alarmclock typpdef points to the variable "ambientlight_factor" */
+	if(array_averaged < schmitt_ex_th){
 		ambientlight_factor = 1;
+		schmitt_ex_th = schmitt_base_th + 5;
 	}else{
-		ambientlight_factor = 8;
+		ambientlight_factor = 24;
+		schmitt_ex_th = schmitt_base_th - 5;
 	}
 }
 

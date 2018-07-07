@@ -62,33 +62,3 @@ void init_buttons(){
 	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
 	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 }
-
-/**
-  * @brief  enable buttons
-  * @note   None
-  * @retval None
-  */
-void enable_buttons(){
-	/* Enable and set EXTI lines Interrupt */
-	HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
-	HAL_NVIC_EnableIRQ(EXTI0_IRQn);
-	HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
-	HAL_NVIC_EnableIRQ(EXTI1_IRQn);
-	HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
-	HAL_NVIC_EnableIRQ(EXTI2_IRQn);
-	HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
-	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
-}
-
-/**
-  * @brief  enable buttons
-  * @note   None
-  * @retval None
-  */
-void disable_buttons(){
-	/* Enable and set EXTI lines Interrupt */
-	HAL_NVIC_DisableIRQ(EXTI0_IRQn);
-	HAL_NVIC_DisableIRQ(EXTI1_IRQn);
-	HAL_NVIC_DisableIRQ(EXTI2_IRQn);
-	HAL_NVIC_DisableIRQ(EXTI15_10_IRQn);
-}

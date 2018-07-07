@@ -19,7 +19,5 @@
 
 /* Exported functions */
 void init_buttons(void);
-void enable_buttons(void);
-void disable_buttons(void);
 
 #endif

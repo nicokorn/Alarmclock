@@ -1,11 +1,11 @@
 /*
  * Autor: Nico Korn
- * Date: 29.01.2018
- * Firmware for the STM32F103 Microcontroller to work with WS2812b leds.
+ * Date: 15.05.2018
+ * Firmware for a alarmlcock with custom made STM32F103 microcontroller board.
  *  *
- * Copyright (c) 2017 Nico Korn
+ * Copyright (c) 2018 Nico Korn
  *
- * buttons.c this module contents button init and functions.
+ * buttons.c this module contents init and functions for push and switch buttons.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -39,18 +39,18 @@
 void init_buttons(){
 	/* init push button gpio */
 	__HAL_RCC_GPIOB_CLK_ENABLE();																		//enable clock on the bus
-	GPIO_InitTypeDef GPIO_InitStruct_touch_btn;
-	GPIO_InitStruct_touch_btn.Pin = 	BUTTON_MODE | BUTTON_PLUS | BUTTON_MINUS | BUTTON_SNOOZE; 		// select pin 1,2,3,13
-	GPIO_InitStruct_touch_btn.Mode = 	GPIO_MODE_IT_FALLING; 											// configure pins for pp o,utput
-	GPIO_InitStruct_touch_btn.Pull = 	GPIO_NOPULL;													// state clear because line either set up to 3.3V or down to GND
-	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct_touch_btn);													// setting GPIO registers
+	GPIO_InitTypeDef GPIO_InitStruct_Touch_BTN;
+	GPIO_InitStruct_Touch_BTN.Pin 		= BUTTON_MODE | BUTTON_PLUS | BUTTON_MINUS | BUTTON_SNOOZE; 	// select pin 1,2,3,13
+	GPIO_InitStruct_Touch_BTN.Mode 		= GPIO_MODE_IT_FALLING; 										// configure pins for pp o,utput
+	GPIO_InitStruct_Touch_BTN.Pull 		= GPIO_NOPULL;													// state clear because line either set up to 3.3V or down to GND
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct_Touch_BTN);													// setting GPIO registers
 
 	/* init switch button gpio */
-	GPIO_InitTypeDef GPIO_InitStruct_switch_btn;
-	GPIO_InitStruct_switch_btn.Pin = 	SWITCH_ALARM; 													// select pin 11
-	GPIO_InitStruct_switch_btn.Mode = 	GPIO_MODE_IT_RISING_FALLING; 									// configure pins for IT input
-	GPIO_InitStruct_switch_btn.Pull = 	GPIO_NOPULL;													// state clear because line either set up to 3.3V or down to GND
-	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct_switch_btn);													// setting GPIO registers
+	GPIO_InitTypeDef GPIO_InitStruct_Switch_BTN;
+	GPIO_InitStruct_Switch_BTN.Pin 		= SWITCH_ALARM; 												// select pin 11
+	GPIO_InitStruct_Switch_BTN.Mode 	= GPIO_MODE_IT_RISING_FALLING; 									// configure pins for IT input
+	GPIO_InitStruct_Switch_BTN.Pull 	= GPIO_NOPULL;													// state clear because line either set up to 3.3V or down to GND
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct_Switch_BTN);													// setting GPIO registers
 
 	/* Enable and set EXTI lines Interrupt */
 	HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);

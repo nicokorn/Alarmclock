@@ -50,9 +50,8 @@ typedef enum
 typedef struct {
 	uint8_t 	number_construction[3][7];	// a number has a resolution of 7*3 Pixels
 }Number;
-
 typedef struct {
-	uint8_t 	letter_construction[3][7];	// a letter has a resolution of 7*3 Pixels
+	uint8_t 	letter_construction[5][7];	// a letter has a resolution of 7*3 Pixels
 }Letter;
 
 typedef struct {

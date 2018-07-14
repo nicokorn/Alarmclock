@@ -1,9 +1,9 @@
 /*
  * Autor: Nico Korn
- * Date: 29.01.2018
- * Firmware for the STM32F103 Microcontroller to work with WS2812b leds.
+ * Date: 15.05.2018
+ * Firmware for a alarmlcock with custom made STM32F103 microcontroller board.
  *  *
- * Copyright (c) 2017 Nico Korn
+ * Copyright (c) 2018 Nico Korn
  *
  * buzzer.c this module contents buzzer init and functions.
  *
@@ -33,8 +33,6 @@
 #include "stm32f1xx.h"
 
 /* global variables */
-/* Configuration struct for the timer. This variable needs to be declared global
- * because it's also used in the interrupt handler module */
 TIM_HandleTypeDef	TIM4_Handle;
 
 /**
@@ -46,9 +44,9 @@ void init_buzzer(uint16_t beep_period){
 	/* init button gpio */
 	__HAL_RCC_GPIOB_CLK_ENABLE();									//enable clock on the bus
 	GPIO_InitTypeDef GPIO_InitStruct_Buzzer;
-	GPIO_InitStruct_Buzzer.Pin = 		BUZZER_PIN; 				// select 12th pin (PB11)
-	GPIO_InitStruct_Buzzer.Mode = 		GPIO_MODE_OUTPUT_PP; 		// configure as push pull outputt
-	GPIO_InitStruct_Buzzer.Speed = 		GPIO_SPEED_FREQ_MEDIUM;
+	GPIO_InitStruct_Buzzer.Pin 			= BUZZER_PIN; 				// select 12th pin (PB11)
+	GPIO_InitStruct_Buzzer.Mode 		= GPIO_MODE_OUTPUT_PP; 		// configure as push pull outputt
+	GPIO_InitStruct_Buzzer.Speed 		= GPIO_SPEED_FREQ_MEDIUM;
 	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct_Buzzer);					// setting GPIO registers
 
 	/* init buzzer timer */
@@ -71,11 +69,11 @@ void init_buzzer_timer(uint16_t beep_period){
 		+ ClockDivision = 0
 		+ Counter direction = Up
 	 */
-	TIM4_Handle.Instance = TIM4;
-	TIM4_Handle.Init.Prescaler         = 31999;				// divide tim clock with 30999 to get 1 kHz (1 ms) --- (32 Mhz / 1 kHz) - 1 = 30999
-	TIM4_Handle.Init.Period            = beep_period / 2;	// divided by 2 because every timer update event (e.g. 2 Hz = 500 ms) the led shall toggle
-	TIM4_Handle.Init.ClockDivision     = 0;
-	TIM4_Handle.Init.CounterMode       = TIM_COUNTERMODE_UP;
+	TIM4_Handle.Instance 				= TIM4;
+	TIM4_Handle.Init.Prescaler			= 31999;				// divide tim clock with 31999 to get 1 kHz (1 ms) --- (32 Mhz / 1 kHz) - 1 = 30999
+	TIM4_Handle.Init.Period				= beep_period / 2;		// divided by 2 because every timer update event (e.g. 2 Hz = 500 ms) the led shall toggle
+	TIM4_Handle.Init.ClockDivision		= 0;
+	TIM4_Handle.Init.CounterMode		= TIM_COUNTERMODE_UP;
 	if (HAL_TIM_Base_Init(&TIM4_Handle) != HAL_OK){
 		/* stay here if an error happened */
 	}

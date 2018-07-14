@@ -1,11 +1,12 @@
 /*
  * Autor: Nico Korn
- * Date: 26.10.2017
- * Firmware for the STM32F103 Microcontroller to work with WS2812b leds.
+ * Date: 15.05.2018
+ * Firmware for a alarmlcock with custom made STM32F103 microcontroller board.
  *  *
- * Copyright (c) 2017 Nico Korn
+ * Copyright (c) 2018 Nico Korn
  *
- * dma_ws2812.c this module contents the initialization of the dma transfer with clock_background_framebuffer handling.
+ * ws2812.c this module contents the initialization of the ws2812b leds including
+ * several functions.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,13 +39,14 @@
 /* this define sets the number of TIM2 overflows
  * to append to the data frame for the LEDs to
  * load the received data into their registers */
-#define WS2812_DEADPERIOD 19
+#define WS2812_DEADPERIOD 		19
 /* WS2812 GPIO output buffer size */
-#define GPIO_BUFFERSIZE COL*24
+#define GPIO_BUFFERSIZE 		COL*24
 /* background RGB color buffer size */
-#define BACKGROUND_BUFFERSIZE ROW*COL*3
-/* variables */
+#define BACKGROUND_BUFFERSIZE 	ROW*COL*3
+/* global variables */
 uint8_t 				WS2812_TC;												//global scope: used in the main routine
+/* private variables */
 static uint8_t 			TIM2_overflows = 0;
 static uint8_t			init = 0;
 static uint8_t			clock_background_framebuffer[BACKGROUND_BUFFERSIZE];	//11 rows * 11 cols * 3 (RGB) = 363 --- separate frame buffer for background fx --- 1 array entry contents a color component information in 8 bit. 3 entries together = 1 RGB Information
@@ -52,7 +54,7 @@ static uint16_t 		WS2812_IO_High = 0xFFFF;
 static uint16_t 		WS2812_IO_Low = 0x0000;
 static uint16_t 		WS2812_IO_framedata[GPIO_BUFFERSIZE];					// 11 cols * 24 bits (R(8bit), G(8bit), B(8bit)) = 266 --- output array transferred to GPIO output --- 1 array entry contents 16 bits parallel to GPIO output
 /* typedefs */
-TIM_HandleTypeDef 		TIM_HandleStruct;
+TIM_HandleTypeDef 		TIM2_Handle;
 DMA_HandleTypeDef 		DMA_HandleStruct_UEV;
 DMA_HandleTypeDef 		DMA_HandleStruct_CC1;
 DMA_HandleTypeDef 		DMA_HandleStruct_CC2;
@@ -91,27 +93,28 @@ void init_timer(void){
 	PrescalerValue = (uint16_t) (SystemCoreClock / 24000000) - 1;
 
 	/* Time base configuration */
-	TIM_HandleStruct.Instance = TIM2;
-	TIM_HandleStruct.Init.Period = 29;	// set the period to get 29 to get a 800kHz timer
-	TIM_HandleStruct.Init.Prescaler = PrescalerValue;
-	TIM_HandleStruct.Init.ClockDivision = 0;
-	TIM_HandleStruct.Init.CounterMode = TIM_COUNTERMODE_UP;
-	HAL_TIM_Base_Init(&TIM_HandleStruct);
+	TIM2_Handle.Instance = TIM2;
+	TIM2_Handle.Init.Period = 29;	// set the period to get 29 to get a 800kHz timer
+	TIM2_Handle.Init.Prescaler = PrescalerValue;
+	TIM2_Handle.Init.ClockDivision = 0;
+	TIM2_Handle.Init.CounterMode = TIM_COUNTERMODE_UP;
+	HAL_TIM_Base_Init(&TIM2_Handle);
     /* Reset the ARR Preload Bit */
 	TIM2->CR1 &= (uint16_t)~TIM_CR1_ARPE;
 
 	sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-	HAL_TIM_ConfigClockSource(&TIM_HandleStruct, &sClockSourceConfig);
+	HAL_TIM_ConfigClockSource(&TIM2_Handle, &sClockSourceConfig);
 
 	sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
 	sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-	HAL_TIMEx_MasterConfigSynchronization(&TIM_HandleStruct, &sMasterConfig);
+	HAL_TIMEx_MasterConfigSynchronization(&TIM2_Handle, &sMasterConfig);
 
 	/* Timing Mode configuration: Channel 1 */
 	TIM_OC1Struct.OCMode = TIM_OCMODE_TIMING;
+	TIM_OC1Struct.OCPolarity = TIM_OCPOLARITY_HIGH;
 	TIM_OC1Struct.Pulse = 8;
 	/* Configure the channel */
-	HAL_TIM_OC_ConfigChannel(&TIM_HandleStruct, &TIM_OC1Struct, TIM_CHANNEL_1);
+	HAL_TIM_OC_ConfigChannel(&TIM2_Handle, &TIM_OC1Struct, TIM_CHANNEL_1);
 
 	/* Timing Mode configuration: Channel 2 */
 	TIM_OC2Struct.OCMode = TIM_OCMODE_PWM1;
@@ -122,7 +125,7 @@ void init_timer(void){
 	TIM_OC2Struct.OCFastMode = TIM_OCFAST_ENABLE;
 	TIM_OC2Struct.OCIdleState = TIM_CCx_ENABLE;
 	/* Configure the channel */
-	HAL_TIM_PWM_ConfigChannel(&TIM_HandleStruct, &TIM_OC2Struct, TIM_CHANNEL_2);
+	HAL_TIM_PWM_ConfigChannel(&TIM2_Handle, &TIM_OC2Struct, TIM_CHANNEL_2);
 
 	/* configure TIM2 interrupt */
 	HAL_NVIC_SetPriority(TIM2_IRQn, 0, 2);
@@ -256,19 +259,19 @@ void sendbuf_WS2812(){
 	TIM2->SR = 0;
 
 	/* IMPORTANT: enable the TIM2 DMA requests AFTER enabling the DMA channels! */
-	__HAL_TIM_ENABLE_DMA(&TIM_HandleStruct, TIM_DMA_UPDATE);
-	__HAL_TIM_ENABLE_DMA(&TIM_HandleStruct, TIM_DMA_CC1);
-	__HAL_TIM_ENABLE_DMA(&TIM_HandleStruct, TIM_DMA_CC2);
+	__HAL_TIM_ENABLE_DMA(&TIM2_Handle, TIM_DMA_UPDATE);
+	__HAL_TIM_ENABLE_DMA(&TIM2_Handle, TIM_DMA_CC1);
+	__HAL_TIM_ENABLE_DMA(&TIM2_Handle, TIM_DMA_CC2);
 
 	/* Enable the Output compare channel */
 	TIM_CCxChannelCmd(TIM2, TIM_CHANNEL_1, TIM_CCx_ENABLE);
 	TIM_CCxChannelCmd(TIM2, TIM_CHANNEL_2, TIM_CCx_ENABLE);
 
 	/* preload counter with 29 so TIM2 generates UEV directly to start DMA transfer */
-	__HAL_TIM_SET_COUNTER(&TIM_HandleStruct, 29);
+	__HAL_TIM_SET_COUNTER(&TIM2_Handle, 29);
 
 	/* start TIM2 */
-	__HAL_TIM_ENABLE(&TIM_HandleStruct);
+	__HAL_TIM_ENABLE(&TIM2_Handle);
 }
 
 /* DMA1 Channel2 Interrupt Handler gets executed once the complete frame buffer
@@ -300,10 +303,10 @@ void WS2812_TIM2_callback(void){
 		/* stop TIM2 now because dead period has been reached */
 		TIM_CCxChannelCmd(TIM2, TIM_CHANNEL_1, TIM_CCx_DISABLE);
 		TIM_CCxChannelCmd(TIM2, TIM_CHANNEL_2, TIM_CCx_DISABLE);
-		__HAL_TIM_DISABLE(&TIM_HandleStruct);
+		__HAL_TIM_DISABLE(&TIM2_Handle);
 
 		/* disable the TIM2 Update interrupt again so it doesn't occur while transmitting data */
-		__HAL_TIM_DISABLE_IT(&TIM_HandleStruct, TIM_IT_UPDATE);
+		__HAL_TIM_DISABLE_IT(&TIM2_Handle, TIM_IT_UPDATE);
 
 		/* finally indicate that the data frame has been transmitted */
 		WS2812_TC = 1;
@@ -356,7 +359,7 @@ void TransferComplete(DMA_HandleTypeDef *DmaHandle){
 	HAL_NVIC_ClearPendingIRQ(DMA1_Channel7_IRQn);
 
 	/* enable TIM2 Update interrupt to append 50us dead period */
-	__HAL_TIM_ENABLE_IT(&TIM_HandleStruct, TIM_IT_UPDATE);
+	__HAL_TIM_ENABLE_IT(&TIM2_Handle, TIM_IT_UPDATE);
 
 	/* disable the DMA channels */
 	__HAL_DMA_DISABLE(&DMA_HandleStruct_UEV);
@@ -364,9 +367,9 @@ void TransferComplete(DMA_HandleTypeDef *DmaHandle){
 	__HAL_DMA_DISABLE(&DMA_HandleStruct_CC2);
 
 	/* IMPORTANT: disable the DMA requests, too! */
-	__HAL_TIM_DISABLE_DMA(&TIM_HandleStruct, TIM_DMA_UPDATE);
-	__HAL_TIM_DISABLE_DMA(&TIM_HandleStruct, TIM_DMA_CC1);
-	__HAL_TIM_DISABLE_DMA(&TIM_HandleStruct, TIM_DMA_CC2);
+	__HAL_TIM_DISABLE_DMA(&TIM2_Handle, TIM_DMA_UPDATE);
+	__HAL_TIM_DISABLE_DMA(&TIM2_Handle, TIM_DMA_CC1);
+	__HAL_TIM_DISABLE_DMA(&TIM2_Handle, TIM_DMA_CC2);
 }
 
 /**
@@ -534,13 +537,13 @@ void WS2812_led_test(){
 	uint8_t greentest = 0x00;
 	uint8_t bluetest = 0x00;
 
-	for(uint16_t i = 0; i<765; i++){
+	for(uint16_t i = 0; i<380; i++){
 		while(!WS2812_TC);
 		/* fill the complete buffer at first round */
 		if(i == 0){
 			for(uint8_t y = 0; y<ROW; y++){
 				/* set the color with the color wheel function */
-				for(uint8_t s=0; s<15; s++){
+				for(uint8_t s=0; s<20; s++){
 					WS2812_color_wheel_plus(&redtest, &greentest, &bluetest);
 				}
 				for(uint16_t x = 0; x<COL; x++){
@@ -563,9 +566,9 @@ void WS2812_led_test(){
 			}
 			/* write new color in bottom row */
 			for(uint16_t j=0; j<COL; j++){
-				clock_background_framebuffer[(ROW*COL*3)+(j*3)] = redtest;
-				clock_background_framebuffer[(ROW*COL*3)+(j*3)+1] = greentest;
-				clock_background_framebuffer[(ROW*COL*3)+(j*3)+2] = bluetest;
+				clock_background_framebuffer[((ROW-1)*COL*3)+(j*3)] = redtest;
+				clock_background_framebuffer[((ROW-1)*COL*3)+(j*3)+1] = greentest;
+				clock_background_framebuffer[((ROW-1)*COL*3)+(j*3)+2] = bluetest;
 			}
 		}
 		/* write buffer into buffer... lol */
@@ -575,7 +578,7 @@ void WS2812_led_test(){
 			}
 		}
 		sendbuf_WS2812();
-		HAL_Delay(5);
+		HAL_Delay(10);
 	}
 }
 

@@ -1,7 +1,7 @@
 /*
  * Autor: Nico Korn
- * Date: 04.02.2018
- * Firmware for the STM32F103 Microcontroller to work with WS2812b leds.
+ * Date: 15.05.2018
+ * Firmware for a alarmlcock with custom made STM32F103 microcontroller board.
  *  *
  * Copyright (c) 2018 Nico Korn
  *

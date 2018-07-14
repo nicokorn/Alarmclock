@@ -1,9 +1,9 @@
 /*
  * Autor: Nico Korn
- * Date: 18.02.2018
- * Firmware for the STM32F103 Microcontroller to work with WS2812b leds.
+ * Date: 15.05.2018
+ * Firmware for a alarmlcock with custom made STM32F103 microcontroller board.
  *  *
- * Copyright (c) 2017 Nico Korn
+ * Copyright (c) 2018 Nico Korn
  *
  * lightsensor.c this module contents lightsensor init and functions.
  *
@@ -35,17 +35,15 @@
 
 /* private variables */
 static uint16_t 			adc_buffer[BUFFERSIZE];
+static TIM_HandleTypeDef    TIM3_Handle;
 
 /* global variables */
-ADC_HandleTypeDef 			ADCHandle;
+ADC_HandleTypeDef 			ADC_Handle;
+DMA_HandleTypeDef 			DMA_Handle;
 RCC_PeriphCLKInitTypeDef  	PeriphClkInit;
 ADC_ChannelConfTypeDef 		ADCChConfig;
-DMA_HandleTypeDef 			DMA_HandleStruct;
 GPIO_InitTypeDef 			GPIO_InitStruct_Light;
 uint16_t 					ambientlight_factor, adc_raw;
-
-/* private variables */
-static TIM_HandleTypeDef    TIM3_Handle;
 
 /**
   * @brief  initialization of lightsensor
@@ -64,7 +62,7 @@ void init_lightsensor(Alarmclock *alarmclock_param){
 	init_timer_lightsensor();
 	/* start adc */
 	HAL_TIM_Base_Start(&TIM3_Handle);
-	HAL_ADC_Start_DMA(&ADCHandle, &adc_raw, 1);
+	HAL_ADC_Start_DMA(&ADC_Handle, &adc_raw, 1);
 }
 
 /**
@@ -75,9 +73,9 @@ void init_lightsensor(Alarmclock *alarmclock_param){
 void init_gpio_lightsensor(){
 	/* init gpio input pin as analog*/
 	__HAL_RCC_GPIOA_CLK_ENABLE();								//enable clock on the bus
-	GPIO_InitStruct_Light.Pin = 	(uint16_t)0x0080U; 			// select 8th pin  (PA7)
-	GPIO_InitStruct_Light.Mode = 	GPIO_MODE_ANALOG; 			// configure pins as analog input
-	GPIO_InitStruct_Light.Pull = 	GPIO_NOPULL;				// no pull up or down resistors
+	GPIO_InitStruct_Light.Pin 		= (uint16_t)0x0080U; 		// select 8th pin  (PA7)
+	GPIO_InitStruct_Light.Mode 		= GPIO_MODE_ANALOG; 		// configure pins as analog input
+	GPIO_InitStruct_Light.Pull 		= GPIO_NOPULL;				// no pull up or down resistors
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct_Light);				// setting GPIO registers
 }
 
@@ -131,22 +129,22 @@ void init_dma_lightsensor(){
 	__HAL_RCC_DMA1_CLK_ENABLE();
 
 	/* DMA1 Channel2 configuration ----------------------------------------------*/
-	DMA_HandleStruct.Instance 					= DMA1_Channel1;
-	DMA_HandleStruct.Init.Direction 			= DMA_PERIPH_TO_MEMORY;
-	DMA_HandleStruct.Init.PeriphInc 			= DMA_PINC_DISABLE;
-	DMA_HandleStruct.Init.MemInc 				= DMA_MINC_ENABLE;
-	DMA_HandleStruct.Init.Mode 					= DMA_CIRCULAR;
-	DMA_HandleStruct.Init.PeriphDataAlignment 	= DMA_PDATAALIGN_HALFWORD;
-	DMA_HandleStruct.Init.MemDataAlignment 		= DMA_MDATAALIGN_HALFWORD;
-	DMA_HandleStruct.Init.Priority 				= DMA_PRIORITY_HIGH;
-	HAL_DMA_DeInit(&DMA_HandleStruct);
-	if(HAL_DMA_Init(&DMA_HandleStruct) != HAL_OK){
+	DMA_Handle.Instance 					= DMA1_Channel1;
+	DMA_Handle.Init.Direction 				= DMA_PERIPH_TO_MEMORY;
+	DMA_Handle.Init.PeriphInc 				= DMA_PINC_DISABLE;
+	DMA_Handle.Init.MemInc 					= DMA_MINC_ENABLE;
+	DMA_Handle.Init.Mode 					= DMA_CIRCULAR;
+	DMA_Handle.Init.PeriphDataAlignment 	= DMA_PDATAALIGN_HALFWORD;
+	DMA_Handle.Init.MemDataAlignment 		= DMA_MDATAALIGN_HALFWORD;
+	DMA_Handle.Init.Priority 				= DMA_PRIORITY_HIGH;
+	HAL_DMA_DeInit(&DMA_Handle);
+	if(HAL_DMA_Init(&DMA_Handle) != HAL_OK){
 		while(1){
 			//error
 		}
 	}
 
-    __HAL_LINKDMA(&ADCHandle,DMA_Handle,DMA_HandleStruct);
+    __HAL_LINKDMA(&ADC_Handle,DMA_Handle,DMA_Handle);
     HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 6, 0);
     HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
 }
@@ -166,22 +164,22 @@ void init_adc_lightsensor(){
 	HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit);
 
 	/* configure adc */
-	ADCHandle.Instance 							= ADC1;
-	ADCHandle.Init.ContinuousConvMode 			= DISABLE;					// continuous mode enabled = permanent sampling and converting
-	ADCHandle.Init.DiscontinuousConvMode 		= DISABLE;
-	ADCHandle.Init.DataAlign 					= ADC_DATAALIGN_RIGHT;
-	ADCHandle.Init.ScanConvMode 				= ADC_SCAN_DISABLE;			// Sequencer disabled (ADC conversion on only 1 channel: channel set on rank 1)
-	ADCHandle.Init.ExternalTrigConv 			= ADC1_2_EXTERNALTRIG_T3_TRGO;
-	HAL_ADC_Init(&ADCHandle);
+	ADC_Handle.Instance 						= ADC1;
+	ADC_Handle.Init.ContinuousConvMode 			= DISABLE;					// continuous mode enabled = permanent sampling and converting
+	ADC_Handle.Init.DiscontinuousConvMode 		= DISABLE;
+	ADC_Handle.Init.DataAlign 					= ADC_DATAALIGN_RIGHT;
+	ADC_Handle.Init.ScanConvMode 				= ADC_SCAN_DISABLE;			// Sequencer disabled (ADC conversion on only 1 channel: channel set on rank 1)
+	ADC_Handle.Init.ExternalTrigConv 			= ADC1_2_EXTERNALTRIG_T3_TRGO;
+	HAL_ADC_Init(&ADC_Handle);
 
 	/* Channel configuration */
 	ADCChConfig.Channel 						= ADC_CHANNEL_7;
 	ADCChConfig.Rank 							= ADC_REGULAR_RANK_1;
 	ADCChConfig.SamplingTime 					= ADC_SAMPLETIME_28CYCLES_5;
-	HAL_ADC_ConfigChannel(&ADCHandle, &ADCChConfig);
+	HAL_ADC_ConfigChannel(&ADC_Handle, &ADCChConfig);
 
 	/* calibration */
-	while(HAL_ADCEx_Calibration_Start(&ADCHandle) != HAL_OK);
+	while(HAL_ADCEx_Calibration_Start(&ADC_Handle) != HAL_OK);
 
 	/* NVIC configuration for ADC interrupt */
 	/* Priority: high-priority */
@@ -195,7 +193,7 @@ void init_adc_lightsensor(){
   * @retval None
   */
 void start_lightsensor_adc_conversion(){
-	HAL_ADC_Start(&ADCHandle);
+	HAL_ADC_Start(&ADC_Handle);
 	HAL_Delay(1);
 }
 
@@ -205,7 +203,7 @@ void start_lightsensor_adc_conversion(){
   * @retval None
   */
 void stop_lightsensor_adc_conversion(){
-	HAL_ADC_Stop(&ADCHandle);
+	HAL_ADC_Stop(&ADC_Handle);
 }
 
 /**
@@ -214,7 +212,7 @@ void stop_lightsensor_adc_conversion(){
   * @retval None
   */
 void get_lightsensor_adc_conversion(uint32_t *adc_conversion){
-	*adc_conversion = HAL_ADC_GetValue(&ADCHandle);
+	*adc_conversion = HAL_ADC_GetValue(&ADC_Handle);
 }
 
 /* Callback function for the adc interrupt */
@@ -226,8 +224,8 @@ void get_lightsensor_adc_conversion(uint32_t *adc_conversion){
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 	uint32_t array_cumulus = 0;
 	uint16_t array_averaged = 0;
-	static const uint16_t schmitt_base_th = 11;
-	static uint16_t schmitt_ex_th = 11;
+	//static const uint16_t schmitt_base_th = 2;
+	static uint16_t schmitt_ex_th = 2;
 
 	/* init the filter with zeros */
 	for(uint16_t i = BUFFERSIZE-1; i>0; i--){
@@ -241,12 +239,12 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 	array_averaged = array_cumulus >> 6;
 
 	/* notice! a pointer from the alarmclock typpdef points to the variable "ambientlight_factor" */
-	if(array_averaged < schmitt_ex_th){
+	if(array_averaged <= schmitt_ex_th){
 		ambientlight_factor = 1;
-		schmitt_ex_th = schmitt_base_th + 5;
+		schmitt_ex_th = 2;//schmitt_base_th + 2;
 	}else{
 		ambientlight_factor = 24;
-		schmitt_ex_th = schmitt_base_th - 5;
+		schmitt_ex_th = 0;//schmitt_base_th - 2;
 	}
 }
 

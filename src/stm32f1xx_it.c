@@ -43,9 +43,8 @@
 
 /* External variables --------------------------------------------------------*/
 extern TIM_HandleTypeDef    TIM4_Handle;
-//extern TIM_HandleTypeDef    TIM4_Handle;
 extern RTC_HandleTypeDef 	RTC_Handle;
-extern ADC_HandleTypeDef 	ADCHandle;
+extern ADC_HandleTypeDef 	ADC_Handle;
    
 /** @addtogroup STM32F1xx_HAL_Examples
   * @{
@@ -297,7 +296,7 @@ void RTC_Alarm_IRQHandler(void){
   * @retval None
   */
 void ADC1_2_IRQHandler(void){
-	HAL_ADC_IRQHandler(&ADCHandle);
+	HAL_ADC_IRQHandler(&ADC_Handle);
 }
 
 /**
@@ -306,7 +305,7 @@ void ADC1_2_IRQHandler(void){
 * @retval None
 */
 void DMA1_Channel1_IRQHandler(void){
-	HAL_DMA_IRQHandler(ADCHandle.DMA_Handle);
+	HAL_DMA_IRQHandler(ADC_Handle.DMA_Handle);
 }
 
 

@@ -3,9 +3,10 @@
 #define __CLOCK_H
 
 /* Includes */
+#include <stdio.h>
 #include "ws2812.h"
-#include "buzzer.h"
 #include "button.h"
+//#include "lightsensor.h"
 #include "stm32f1xx.h"
 
 /* Exported types */
@@ -18,7 +19,10 @@ typedef enum
 	MODE_TIME_SET_CLOCK_h,
 	MODE_TIME_SET_CLOCK_min,
 	MODE_TIME_SET_ALARM_h,
-	MODE_TIME_SET_ALARM_min
+	MODE_TIME_SET_ALARM_min,
+	MODE_TIME_SET_SNOOZE,
+	MODE_TIME_SET_ALARM_STYLE,
+	MODE_TIME_LUX
 }Wordclock_Mode;
 
 /*
@@ -42,17 +46,18 @@ typedef enum
 	UNLOCKED
 }Alarm_Mode;
 
+/*
+* @brief  enumeration for alarm styles
+  */
+typedef enum
+{
+	FLASHING,
+	COLORFALL
+}Alarm_Style;
+
 /* Exported constants */
 
 /* Exported macro */
-
-/* Exported structs */
-typedef struct {
-	uint8_t 	number_construction[3][7];	// a number has a resolution of 7*3 Pixels
-}Number;
-typedef struct {
-	uint8_t 	letter_construction[5][7];	// a letter has a resolution of 7*3 Pixels
-}Letter;
 
 typedef struct {
 	Wordclock_Mode 		mode;
@@ -63,6 +68,10 @@ typedef struct {
 	uint8_t				green;
 	uint8_t				blue;
 	uint8_t				color_index;
+	uint8_t				buzzer_state;
+	uint8_t				snooze_state;
+	uint8_t				snooze_duration;
+	Alarm_Style			alarm_style;
 	uint16_t			event;
 	uint16_t*			ambient_light_factor;
 }Alarmclock;
@@ -78,13 +87,11 @@ void led_alarm_hour_plus(Alarmclock *alarmclock_param);
 void led_alarm_hour_minus(Alarmclock *alarmclock_param);
 void led_alarm_minute_plus(Alarmclock *alarmclock_param);
 void led_alarm_minute_minus(Alarmclock *alarmclock_param);
-void draw_number(Number number, int16_t x_offset, int8_t y_offset, uint8_t *red, uint8_t *green, uint8_t *blue, uint16_t *ambient_factor);
-void draw_letter(Letter letter, int16_t x_offset, int8_t y_offset, uint8_t *red, uint8_t *green, uint8_t *blue, uint16_t *ambient_factor);
 void RTC_CalendarConfig(Alarmclock *alarmclock_param);
 void RTC_CalendarShow(uint8_t *showtime, uint8_t *showdate);
 void draw_hh_mm(Time_Setup time, Alarmclock *alarmclock_param);
 void alarm_IT(FunctionalState flag);
-void RTC_AlarmEventCallback();
+void RTC_AlarmEventCallback(Alarmclock *alarmclock_param);
 void increment_mode(Alarmclock *alarmclock_param);
 void increment_clock_color(Alarmclock *alarmclock_param);
 void decrement_clock_color(Alarmclock *alarmclock_param);
@@ -94,7 +101,15 @@ void get_clock_preferences(Alarmclock *alarmclock_param);
 void set_clock_preferences(Alarmclock *alarmclock_param);
 void refresh_clock_display(Alarmclock *alarmclock_param);
 void draw_mode(Alarmclock *alarmclock_param);
-void read_alarm_switch(Alarmclock *alarmclock_param);
+uint8_t read_alarm_switch(void);
 void draw_lux(Alarmclock *alarmclock_param);
+void set_alarm_irq(FunctionalState alarm_irq, Alarmclock *alarmclock_param);
+void clock_intro();
+void alarm_style_plus(Alarmclock *alarmclock_param);
+void alarm_style_minus(Alarmclock *alarmclock_param);
+void show_alarm_style(Alarmclock *alarmclock_param);
+void snooze_plus(Alarmclock *alarmclock_param);
+void snooze_minus(Alarmclock *alarmclock_param);
+void draw_snooze(Alarmclock *alarmclock_param);
 
 #endif

@@ -45,19 +45,64 @@
 /* background RGB color buffer size */
 #define BACKGROUND_BUFFERSIZE 	ROW*COL*3
 /* global variables */
-uint8_t 				WS2812_TC;												//global scope: used in the main routine
+uint8_t 					WS2812_TC;												//global scope: used in the main routine
 /* private variables */
-static uint8_t 			TIM2_overflows = 0;
-static uint8_t			init = 0;
-static uint8_t			clock_background_framebuffer[BACKGROUND_BUFFERSIZE];	//11 rows * 11 cols * 3 (RGB) = 363 --- separate frame buffer for background fx --- 1 array entry contents a color component information in 8 bit. 3 entries together = 1 RGB Information
-static uint16_t 		WS2812_IO_High = 0xFFFF;
-static uint16_t 		WS2812_IO_Low = 0x0000;
-static uint16_t 		WS2812_IO_framedata[GPIO_BUFFERSIZE];					// 11 cols * 24 bits (R(8bit), G(8bit), B(8bit)) = 266 --- output array transferred to GPIO output --- 1 array entry contents 16 bits parallel to GPIO output
+static uint8_t				stop_flag = 0;
+static uint8_t 				TIM2_overflows = 0;
+static uint8_t				init = 0;
+static uint8_t				clock_background_framebuffer[BACKGROUND_BUFFERSIZE];	//11 rows * 11 cols * 3 (RGB) = 363 --- separate frame buffer for background fx --- 1 array entry contents a color component information in 8 bit. 3 entries together = 1 RGB Information
+static uint16_t 			WS2812_IO_High = 0xFFFF;
+static uint16_t 			WS2812_IO_Low = 0x0000;
+static uint16_t 			WS2812_IO_framedata[GPIO_BUFFERSIZE];					// 11 cols * 24 bits (R(8bit), G(8bit), B(8bit)) = 266 --- output array transferred to GPIO output --- 1 array entry contents 16 bits parallel to GPIO output
+/* private numbers and letters */
+static Number 				zero;
+static Number 				one;
+static Number 				two;
+static Number 				three;
+static Number 				four;
+static Number 				five;
+static Number 				six;
+static Number 				seven;
+static Number 				eight;
+static Number 				nine;
+static Number 				doublepoint;
+static Letter 				m;
+static Letter 				w;
+static Letter 				a;
+static Letter 				d;
+static Letter 				e;
+static Letter				f;
+static Letter				h;
+static Letter 				i;
+static Letter				l;
+static Letter				r;
+static Letter				s;
+static Letter 				t;
+static Letter 				u;
+static Letter 				p;
+static Letter				c;
+static Letter				o;
+static Letter				k;
+static Letter				n;
+static Letter				_;
+static Letter				z;
+static Letter				x;
+static Letter 				nzero;
+static Letter 				none;
+static Letter 				ntwo;
+static Letter 				nthree;
+static Letter 				nfour;
+static Letter 				nfive;
+static Letter 				nsix;
+static Letter 				nseven;
+static Letter 				neight;
+static Letter 				nnine;
+
 /* typedefs */
-TIM_HandleTypeDef 		TIM2_Handle;
-DMA_HandleTypeDef 		DMA_HandleStruct_UEV;
-DMA_HandleTypeDef 		DMA_HandleStruct_CC1;
-DMA_HandleTypeDef 		DMA_HandleStruct_CC2;
+TIM_HandleTypeDef 			TIM2_Handle;
+DMA_HandleTypeDef 			DMA_HandleStruct_UEV;
+DMA_HandleTypeDef 			DMA_HandleStruct_CC1;
+DMA_HandleTypeDef 			DMA_HandleStruct_CC2;
 
 /**
   * @brief  initialization of peripherals used for ws2812 leds
@@ -69,6 +114,7 @@ void init_ws2812(void){
 	init_gpio();
 	init_dma();
 	init_timer();
+	init_font();
 
 	/* set transmission flag to 1 */
 	WS2812_TC = 1;
@@ -384,6 +430,1782 @@ void TransferError(DMA_HandleTypeDef *DmaHandle){
 	}
 }
 
+/**
+  * @brief  initialization of letter and number data
+  * @note   None
+  * @retval None
+  */
+void init_font(void){
+	/* construct the numbers
+	 * 1 = set pixel
+	 * 0 = empty pixel
+	 */
+	/* number zero */
+	zero.number_construction[0][0] = 1;
+	zero.number_construction[1][0] = 1;
+	zero.number_construction[2][0] = 1;
+
+	zero.number_construction[0][1] = 1;
+	zero.number_construction[1][1] = 0;
+	zero.number_construction[2][1] = 1;
+
+	zero.number_construction[0][2] = 1;
+	zero.number_construction[1][2] = 0;
+	zero.number_construction[2][2] = 1;
+
+	zero.number_construction[0][3] = 1;
+	zero.number_construction[1][3] = 0;
+	zero.number_construction[2][3] = 1;
+
+	zero.number_construction[0][4] = 1;
+	zero.number_construction[1][4] = 0;
+	zero.number_construction[2][4] = 1;
+
+	zero.number_construction[0][5] = 1;
+	zero.number_construction[1][5] = 0;
+	zero.number_construction[2][5] = 1;
+
+	zero.number_construction[0][6] = 1;
+	zero.number_construction[1][6] = 1;
+	zero.number_construction[2][6] = 1;
+
+	/* number one */
+	one.number_construction[0][0] = 0;
+	one.number_construction[1][0] = 0;
+	one.number_construction[2][0] = 1;
+
+	one.number_construction[0][1] = 0;
+	one.number_construction[1][1] = 0;
+	one.number_construction[2][1] = 1;
+
+	one.number_construction[0][2] = 0;
+	one.number_construction[1][2] = 0;
+	one.number_construction[2][2] = 1;
+
+	one.number_construction[0][3] = 0;
+	one.number_construction[1][3] = 0;
+	one.number_construction[2][3] = 1;
+
+	one.number_construction[0][4] = 0;
+	one.number_construction[1][4] = 0;
+	one.number_construction[2][4] = 1;
+
+	one.number_construction[0][5] = 0;
+	one.number_construction[1][5] = 0;
+	one.number_construction[2][5] = 1;
+
+	one.number_construction[0][6] = 0;
+	one.number_construction[1][6] = 0;
+	one.number_construction[2][6] = 1;
+
+	/* number two */
+	two.number_construction[0][0] = 1;
+	two.number_construction[1][0] = 1;
+	two.number_construction[2][0] = 1;
+
+	two.number_construction[0][1] = 0;
+	two.number_construction[1][1] = 0;
+	two.number_construction[2][1] = 1;
+
+	two.number_construction[0][2] = 0;
+	two.number_construction[1][2] = 0;
+	two.number_construction[2][2] = 1;
+
+	two.number_construction[0][3] = 1;
+	two.number_construction[1][3] = 1;
+	two.number_construction[2][3] = 1;
+
+	two.number_construction[0][4] = 1;
+	two.number_construction[1][4] = 0;
+	two.number_construction[2][4] = 0;
+
+	two.number_construction[0][5] = 1;
+	two.number_construction[1][5] = 0;
+	two.number_construction[2][5] = 0;
+
+	two.number_construction[0][6] = 1;
+	two.number_construction[1][6] = 1;
+	two.number_construction[2][6] = 1;
+
+	/* number three */
+	three.number_construction[0][0] = 1;
+	three.number_construction[1][0] = 1;
+	three.number_construction[2][0] = 1;
+
+	three.number_construction[0][1] = 0;
+	three.number_construction[1][1] = 0;
+	three.number_construction[2][1] = 1;
+
+	three.number_construction[0][2] = 0;
+	three.number_construction[1][2] = 0;
+	three.number_construction[2][2] = 1;
+
+	three.number_construction[0][3] = 1;
+	three.number_construction[1][3] = 1;
+	three.number_construction[2][3] = 1;
+
+	three.number_construction[0][4] = 0;
+	three.number_construction[1][4] = 0;
+	three.number_construction[2][4] = 1;
+
+	three.number_construction[0][5] = 0;
+	three.number_construction[1][5] = 0;
+	three.number_construction[2][5] = 1;
+
+	three.number_construction[0][6] = 1;
+	three.number_construction[1][6] = 1;
+	three.number_construction[2][6] = 1;
+
+	/* number four */
+	four.number_construction[0][0] = 1;
+	four.number_construction[1][0] = 0;
+	four.number_construction[2][0] = 1;
+
+	four.number_construction[0][1] = 1;
+	four.number_construction[1][1] = 0;
+	four.number_construction[2][1] = 1;
+
+	four.number_construction[0][2] = 1;
+	four.number_construction[1][2] = 0;
+	four.number_construction[2][2] = 1;
+
+	four.number_construction[0][3] = 1;
+	four.number_construction[1][3] = 1;
+	four.number_construction[2][3] = 1;
+
+	four.number_construction[0][4] = 0;
+	four.number_construction[1][4] = 0;
+	four.number_construction[2][4] = 1;
+
+	four.number_construction[0][5] = 0;
+	four.number_construction[1][5] = 0;
+	four.number_construction[2][5] = 1;
+
+	four.number_construction[0][6] = 0;
+	four.number_construction[1][6] = 0;
+	four.number_construction[2][6] = 1;
+
+	/* number five */
+	five.number_construction[0][0] = 1;
+	five.number_construction[1][0] = 1;
+	five.number_construction[2][0] = 1;
+
+	five.number_construction[0][1] = 1;
+	five.number_construction[1][1] = 0;
+	five.number_construction[2][1] = 0;
+
+	five.number_construction[0][2] = 1;
+	five.number_construction[1][2] = 0;
+	five.number_construction[2][2] = 0;
+
+	five.number_construction[0][3] = 1;
+	five.number_construction[1][3] = 1;
+	five.number_construction[2][3] = 1;
+
+	five.number_construction[0][4] = 0;
+	five.number_construction[1][4] = 0;
+	five.number_construction[2][4] = 1;
+
+	five.number_construction[0][5] = 0;
+	five.number_construction[1][5] = 0;
+	five.number_construction[2][5] = 1;
+
+	five.number_construction[0][6] = 1;
+	five.number_construction[1][6] = 1;
+	five.number_construction[2][6] = 1;
+
+	/* number six */
+	six.number_construction[0][0] = 1;
+	six.number_construction[1][0] = 1;
+	six.number_construction[2][0] = 1;
+
+	six.number_construction[0][1] = 1;
+	six.number_construction[1][1] = 0;
+	six.number_construction[2][1] = 0;
+
+	six.number_construction[0][2] = 1;
+	six.number_construction[1][2] = 0;
+	six.number_construction[2][2] = 0;
+
+	six.number_construction[0][3] = 1;
+	six.number_construction[1][3] = 1;
+	six.number_construction[2][3] = 1;
+
+	six.number_construction[0][4] = 1;
+	six.number_construction[1][4] = 0;
+	six.number_construction[2][4] = 1;
+
+	six.number_construction[0][5] = 1;
+	six.number_construction[1][5] = 0;
+	six.number_construction[2][5] = 1;
+
+	six.number_construction[0][6] = 1;
+	six.number_construction[1][6] = 1;
+	six.number_construction[2][6] = 1;
+
+	/* number seven */
+	seven.number_construction[0][0] = 1;
+	seven.number_construction[1][0] = 1;
+	seven.number_construction[2][0] = 1;
+
+	seven.number_construction[0][1] = 0;
+	seven.number_construction[1][1] = 0;
+	seven.number_construction[2][1] = 1;
+
+	seven.number_construction[0][2] = 0;
+	seven.number_construction[1][2] = 0;
+	seven.number_construction[2][2] = 1;
+
+	seven.number_construction[0][3] = 0;
+	seven.number_construction[1][3] = 0;
+	seven.number_construction[2][3] = 1;
+
+	seven.number_construction[0][4] = 0;
+	seven.number_construction[1][4] = 0;
+	seven.number_construction[2][4] = 1;
+
+	seven.number_construction[0][5] = 0;
+	seven.number_construction[1][5] = 0;
+	seven.number_construction[2][5] = 1;
+
+	seven.number_construction[0][6] = 0;
+	seven.number_construction[1][6] = 0;
+	seven.number_construction[2][6] = 1;
+
+	/* number eight */
+	eight.number_construction[0][0] = 1;
+	eight.number_construction[1][0] = 1;
+	eight.number_construction[2][0] = 1;
+
+	eight.number_construction[0][1] = 1;
+	eight.number_construction[1][1] = 0;
+	eight.number_construction[2][1] = 1;
+
+	eight.number_construction[0][2] = 1;
+	eight.number_construction[1][2] = 0;
+	eight.number_construction[2][2] = 1;
+
+	eight.number_construction[0][3] = 1;
+	eight.number_construction[1][3] = 1;
+	eight.number_construction[2][3] = 1;
+
+	eight.number_construction[0][4] = 1;
+	eight.number_construction[1][4] = 0;
+	eight.number_construction[2][4] = 1;
+
+	eight.number_construction[0][5] = 1;
+	eight.number_construction[1][5] = 0;
+	eight.number_construction[2][5] = 1;
+
+	eight.number_construction[0][6] = 1;
+	eight.number_construction[1][6] = 1;
+	eight.number_construction[2][6] = 1;
+
+	/* number nine */
+	nine.number_construction[0][0] = 1;
+	nine.number_construction[1][0] = 1;
+	nine.number_construction[2][0] = 1;
+
+	nine.number_construction[0][1] = 1;
+	nine.number_construction[1][1] = 0;
+	nine.number_construction[2][1] = 1;
+
+	nine.number_construction[0][2] = 1;
+	nine.number_construction[1][2] = 0;
+	nine.number_construction[2][2] = 1;
+
+	nine.number_construction[0][3] = 1;
+	nine.number_construction[1][3] = 1;
+	nine.number_construction[2][3] = 1;
+
+	nine.number_construction[0][4] = 0;
+	nine.number_construction[1][4] = 0;
+	nine.number_construction[2][4] = 1;
+
+	nine.number_construction[0][5] = 0;
+	nine.number_construction[1][5] = 0;
+	nine.number_construction[2][5] = 1;
+
+	nine.number_construction[0][6] = 1;
+	nine.number_construction[1][6] = 1;
+	nine.number_construction[2][6] = 1;
+
+	/* doublepoint */
+	doublepoint.number_construction[0][0] = 0;
+	doublepoint.number_construction[1][0] = 0;
+	doublepoint.number_construction[2][0] = 0;
+
+	doublepoint.number_construction[0][1] = 0;
+	doublepoint.number_construction[1][1] = 0;
+	doublepoint.number_construction[2][1] = 0;
+
+	doublepoint.number_construction[0][2] = 0;
+	doublepoint.number_construction[1][2] = 1;
+	doublepoint.number_construction[2][2] = 0;
+
+	doublepoint.number_construction[0][3] = 0;
+	doublepoint.number_construction[1][3] = 0;
+	doublepoint.number_construction[2][3] = 0;
+
+	doublepoint.number_construction[0][4] = 0;
+	doublepoint.number_construction[1][4] = 1;
+	doublepoint.number_construction[2][4] = 0;
+
+	doublepoint.number_construction[0][5] = 0;
+	doublepoint.number_construction[1][5] = 0;
+	doublepoint.number_construction[2][5] = 0;
+
+	doublepoint.number_construction[0][6] = 0;
+	doublepoint.number_construction[1][6] = 0;
+	doublepoint.number_construction[2][6] = 0;
+
+	/* construct the letters
+	 * 1 = set pixel
+	 * 0 = empty pixel
+	 */
+	/* letter A */
+	a.letter_construction[0][0] = 0;
+	a.letter_construction[1][0] = 0;
+	a.letter_construction[2][0] = 0;
+	a.letter_construction[3][0] = 0;
+	a.letter_construction[4][0] = 0;
+
+	a.letter_construction[0][1] = 0;
+	a.letter_construction[1][1] = 1;
+	a.letter_construction[2][1] = 0;
+	a.letter_construction[3][1] = 0;
+	a.letter_construction[4][1] = 0;
+
+	a.letter_construction[0][2] = 1;
+	a.letter_construction[1][2] = 0;
+	a.letter_construction[2][2] = 1;
+	a.letter_construction[3][2] = 0;
+	a.letter_construction[4][2] = 0;
+
+	a.letter_construction[0][3] = 1;
+	a.letter_construction[1][3] = 1;
+	a.letter_construction[2][3] = 1;
+	a.letter_construction[3][3] = 0;
+	a.letter_construction[4][3] = 0;
+
+	a.letter_construction[0][4] = 1;
+	a.letter_construction[1][4] = 0;
+	a.letter_construction[2][4] = 1;
+	a.letter_construction[3][4] = 0;
+	a.letter_construction[4][4] = 0;
+
+	a.letter_construction[0][5] = 1;
+	a.letter_construction[1][5] = 0;
+	a.letter_construction[2][5] = 1;
+	a.letter_construction[3][5] = 0;
+	a.letter_construction[4][5] = 0;
+
+	a.letter_construction[0][6] = 0;
+	a.letter_construction[1][6] = 0;
+	a.letter_construction[2][6] = 0;
+	a.letter_construction[3][6] = 0;
+	a.letter_construction[4][6] = 0;
+
+	/* letter E */
+	e.letter_construction[0][0] = 0;
+	e.letter_construction[1][0] = 0;
+	e.letter_construction[2][0] = 0;
+	e.letter_construction[3][0] = 0;
+	e.letter_construction[4][0] = 0;
+
+	e.letter_construction[0][1] = 1;
+	e.letter_construction[1][1] = 1;
+	e.letter_construction[2][1] = 1;
+	e.letter_construction[3][1] = 0;
+	e.letter_construction[4][1] = 0;
+
+	e.letter_construction[0][2] = 1;
+	e.letter_construction[1][2] = 0;
+	e.letter_construction[2][2] = 0;
+	e.letter_construction[3][2] = 0;
+	e.letter_construction[4][2] = 0;
+
+	e.letter_construction[0][3] = 1;
+	e.letter_construction[1][3] = 1;
+	e.letter_construction[2][3] = 0;
+	e.letter_construction[3][3] = 0;
+	e.letter_construction[4][3] = 0;
+
+	e.letter_construction[0][4] = 1;
+	e.letter_construction[1][4] = 0;
+	e.letter_construction[2][4] = 0;
+	e.letter_construction[3][4] = 0;
+	e.letter_construction[4][4] = 0;
+
+	e.letter_construction[0][5] = 1;
+	e.letter_construction[1][5] = 1;
+	e.letter_construction[2][5] = 1;
+	e.letter_construction[3][5] = 0;
+	e.letter_construction[4][5] = 0;
+
+	e.letter_construction[0][6] = 0;
+	e.letter_construction[1][6] = 0;
+	e.letter_construction[2][6] = 0;
+	e.letter_construction[3][6] = 0;
+	e.letter_construction[4][6] = 0;
+
+	/* letter I */
+	i.letter_construction[0][0] = 0;
+	i.letter_construction[1][0] = 0;
+	i.letter_construction[2][0] = 0;
+	i.letter_construction[3][0] = 0;
+	i.letter_construction[4][0] = 0;
+
+	i.letter_construction[0][1] = 1;
+	i.letter_construction[1][1] = 1;
+	i.letter_construction[2][1] = 1;
+	i.letter_construction[3][1] = 0;
+	i.letter_construction[4][1] = 0;
+
+	i.letter_construction[0][2] = 0;
+	i.letter_construction[1][2] = 1;
+	i.letter_construction[2][2] = 0;
+	i.letter_construction[3][2] = 0;
+	i.letter_construction[4][2] = 0;
+
+	i.letter_construction[0][3] = 0;
+	i.letter_construction[1][3] = 1;
+	i.letter_construction[2][3] = 0;
+	i.letter_construction[3][3] = 0;
+	i.letter_construction[4][3] = 0;
+
+	i.letter_construction[0][4] = 0;
+	i.letter_construction[1][4] = 1;
+	i.letter_construction[2][4] = 0;
+	i.letter_construction[3][4] = 0;
+	i.letter_construction[4][4] = 0;
+
+	i.letter_construction[0][5] = 1;
+	i.letter_construction[1][5] = 1;
+	i.letter_construction[2][5] = 1;
+	i.letter_construction[3][5] = 0;
+	i.letter_construction[4][5] = 0;
+
+	i.letter_construction[0][6] = 0;
+	i.letter_construction[1][6] = 0;
+	i.letter_construction[2][6] = 0;
+	i.letter_construction[3][6] = 0;
+	i.letter_construction[4][6] = 0;
+
+	/* letter L */
+	l.letter_construction[0][0] = 0;
+	l.letter_construction[1][0] = 0;
+	l.letter_construction[2][0] = 0;
+	l.letter_construction[3][0] = 0;
+	l.letter_construction[4][0] = 0;
+
+	l.letter_construction[0][1] = 1;
+	l.letter_construction[1][1] = 0;
+	l.letter_construction[2][1] = 0;
+	l.letter_construction[3][1] = 0;
+	l.letter_construction[4][1] = 0;
+
+	l.letter_construction[0][2] = 1;
+	l.letter_construction[1][2] = 0;
+	l.letter_construction[2][2] = 0;
+	l.letter_construction[3][2] = 0;
+	l.letter_construction[4][2] = 0;
+
+	l.letter_construction[0][3] = 1;
+	l.letter_construction[1][3] = 0;
+	l.letter_construction[2][3] = 0;
+	l.letter_construction[3][3] = 0;
+	l.letter_construction[4][3] = 0;
+
+	l.letter_construction[0][4] = 1;
+	l.letter_construction[1][4] = 0;
+	l.letter_construction[2][4] = 0;
+	l.letter_construction[3][4] = 0;
+	l.letter_construction[4][4] = 0;
+
+	l.letter_construction[0][5] = 1;
+	l.letter_construction[1][5] = 1;
+	l.letter_construction[2][5] = 1;
+	l.letter_construction[3][5] = 0;
+	l.letter_construction[4][5] = 0;
+
+	l.letter_construction[0][6] = 0;
+	l.letter_construction[1][6] = 0;
+	l.letter_construction[2][6] = 0;
+	l.letter_construction[3][6] = 0;
+	l.letter_construction[4][6] = 0;
+
+	/* letter R */
+	r.letter_construction[0][0] = 0;
+	r.letter_construction[1][0] = 0;
+	r.letter_construction[2][0] = 0;
+	r.letter_construction[3][0] = 0;
+	r.letter_construction[4][0] = 0;
+
+	r.letter_construction[0][1] = 1;
+	r.letter_construction[1][1] = 1;
+	r.letter_construction[2][1] = 0;
+	r.letter_construction[3][1] = 0;
+	r.letter_construction[4][1] = 0;
+
+	r.letter_construction[0][2] = 1;
+	r.letter_construction[1][2] = 0;
+	r.letter_construction[2][2] = 1;
+	r.letter_construction[3][2] = 0;
+	r.letter_construction[4][2] = 0;
+
+	r.letter_construction[0][3] = 1;
+	r.letter_construction[1][3] = 1;
+	r.letter_construction[2][3] = 0;
+	r.letter_construction[3][3] = 0;
+	r.letter_construction[4][3] = 0;
+
+	r.letter_construction[0][4] = 1;
+	r.letter_construction[1][4] = 0;
+	r.letter_construction[2][4] = 1;
+	r.letter_construction[3][4] = 0;
+	r.letter_construction[4][4] = 0;
+
+	r.letter_construction[0][5] = 1;
+	r.letter_construction[1][5] = 0;
+	r.letter_construction[2][5] = 1;
+	r.letter_construction[3][5] = 0;
+	r.letter_construction[4][5] = 0;
+
+	r.letter_construction[0][6] = 0;
+	r.letter_construction[1][6] = 0;
+	r.letter_construction[2][6] = 0;
+	r.letter_construction[3][6] = 0;
+	r.letter_construction[4][6] = 0;
+
+	/* letter S */
+	s.letter_construction[0][0] = 0;
+	s.letter_construction[1][0] = 0;
+	s.letter_construction[2][0] = 0;
+	s.letter_construction[3][0] = 0;
+	s.letter_construction[4][0] = 0;
+
+	s.letter_construction[0][1] = 0;
+	s.letter_construction[1][1] = 1;
+	s.letter_construction[2][1] = 1;
+	s.letter_construction[3][1] = 0;
+	s.letter_construction[4][1] = 0;
+
+	s.letter_construction[0][2] = 1;
+	s.letter_construction[1][2] = 0;
+	s.letter_construction[2][2] = 0;
+	s.letter_construction[3][2] = 0;
+	s.letter_construction[4][2] = 0;
+
+	s.letter_construction[0][3] = 0;
+	s.letter_construction[1][3] = 1;
+	s.letter_construction[2][3] = 0;
+	s.letter_construction[3][3] = 0;
+	s.letter_construction[4][3] = 0;
+
+	s.letter_construction[0][4] = 0;
+	s.letter_construction[1][4] = 0;
+	s.letter_construction[2][4] = 1;
+	s.letter_construction[3][4] = 0;
+	s.letter_construction[4][4] = 0;
+
+	s.letter_construction[0][5] = 1;
+	s.letter_construction[1][5] = 1;
+	s.letter_construction[2][5] = 0;
+	s.letter_construction[3][5] = 0;
+	s.letter_construction[4][5] = 0;
+
+	s.letter_construction[0][6] = 0;
+	s.letter_construction[1][6] = 0;
+	s.letter_construction[2][6] = 0;
+	s.letter_construction[3][6] = 0;
+	s.letter_construction[4][6] = 0;
+
+	/* letter T */
+	t.letter_construction[0][0] = 0;
+	t.letter_construction[1][0] = 0;
+	t.letter_construction[2][0] = 0;
+	t.letter_construction[3][0] = 0;
+	t.letter_construction[4][0] = 0;
+
+	t.letter_construction[0][1] = 1;
+	t.letter_construction[1][1] = 1;
+	t.letter_construction[2][1] = 1;
+	t.letter_construction[3][1] = 0;
+	t.letter_construction[4][1] = 0;
+
+	t.letter_construction[0][2] = 0;
+	t.letter_construction[1][2] = 1;
+	t.letter_construction[2][2] = 0;
+	t.letter_construction[3][2] = 0;
+	t.letter_construction[4][2] = 0;
+
+	t.letter_construction[0][3] = 0;
+	t.letter_construction[1][3] = 1;
+	t.letter_construction[2][3] = 0;
+	t.letter_construction[3][3] = 0;
+	t.letter_construction[4][3] = 0;
+
+	t.letter_construction[0][4] = 0;
+	t.letter_construction[1][4] = 1;
+	t.letter_construction[2][4] = 0;
+	t.letter_construction[3][4] = 0;
+	t.letter_construction[4][4] = 0;
+
+	t.letter_construction[0][5] = 0;
+	t.letter_construction[1][5] = 1;
+	t.letter_construction[2][5] = 0;
+	t.letter_construction[3][5] = 0;
+	t.letter_construction[4][5] = 0;
+
+	t.letter_construction[0][6] = 0;
+	t.letter_construction[1][6] = 0;
+	t.letter_construction[2][6] = 0;
+	t.letter_construction[3][6] = 0;
+	t.letter_construction[4][6] = 0;
+
+	/* letter U */
+	u.letter_construction[0][0] = 0;
+	u.letter_construction[1][0] = 0;
+	u.letter_construction[2][0] = 0;
+	u.letter_construction[3][0] = 0;
+	u.letter_construction[4][0] = 0;
+
+	u.letter_construction[0][1] = 1;
+	u.letter_construction[1][1] = 0;
+	u.letter_construction[2][1] = 1;
+	u.letter_construction[3][1] = 0;
+	u.letter_construction[4][1] = 0;
+
+	u.letter_construction[0][2] = 1;
+	u.letter_construction[1][2] = 0;
+	u.letter_construction[2][2] = 1;
+	u.letter_construction[3][2] = 0;
+	u.letter_construction[4][2] = 0;
+
+	u.letter_construction[0][3] = 1;
+	u.letter_construction[1][3] = 0;
+	u.letter_construction[2][3] = 1;
+	u.letter_construction[3][3] = 0;
+	u.letter_construction[4][3] = 0;
+
+	u.letter_construction[0][4] = 1;
+	u.letter_construction[1][4] = 0;
+	u.letter_construction[2][4] = 1;
+	u.letter_construction[3][4] = 0;
+	u.letter_construction[4][4] = 0;
+
+	u.letter_construction[0][5] = 0;
+	u.letter_construction[1][5] = 1;
+	u.letter_construction[2][5] = 1;
+	u.letter_construction[3][5] = 0;
+	u.letter_construction[4][5] = 0;
+
+	u.letter_construction[0][6] = 0;
+	u.letter_construction[1][6] = 0;
+	u.letter_construction[2][6] = 0;
+	u.letter_construction[3][6] = 0;
+	u.letter_construction[4][6] = 0;
+
+	/* letter P */
+	p.letter_construction[0][0] = 0;
+	p.letter_construction[1][0] = 0;
+	p.letter_construction[2][0] = 0;
+	p.letter_construction[3][0] = 0;
+	p.letter_construction[4][0] = 0;
+
+	p.letter_construction[0][1] = 1;
+	p.letter_construction[1][1] = 1;
+	p.letter_construction[2][1] = 0;
+	p.letter_construction[3][1] = 0;
+	p.letter_construction[4][1] = 0;
+
+	p.letter_construction[0][2] = 1;
+	p.letter_construction[1][2] = 0;
+	p.letter_construction[2][2] = 1;
+	p.letter_construction[3][2] = 0;
+	p.letter_construction[4][2] = 0;
+
+	p.letter_construction[0][3] = 1;
+	p.letter_construction[1][3] = 1;
+	p.letter_construction[2][3] = 0;
+	p.letter_construction[3][3] = 0;
+	p.letter_construction[4][3] = 0;
+
+	p.letter_construction[0][4] = 1;
+	p.letter_construction[1][4] = 0;
+	p.letter_construction[2][4] = 0;
+	p.letter_construction[3][4] = 0;
+	p.letter_construction[4][4] = 0;
+
+	p.letter_construction[0][5] = 1;
+	p.letter_construction[1][5] = 0;
+	p.letter_construction[2][5] = 0;
+	p.letter_construction[3][5] = 0;
+	p.letter_construction[4][5] = 0;
+
+	p.letter_construction[0][6] = 0;
+	p.letter_construction[1][6] = 0;
+	p.letter_construction[2][6] = 0;
+	p.letter_construction[3][6] = 0;
+	p.letter_construction[4][6] = 0;
+
+	/* letter C */
+	c.letter_construction[0][0] = 0;
+	c.letter_construction[1][0] = 0;
+	c.letter_construction[2][0] = 0;
+	c.letter_construction[3][0] = 0;
+	c.letter_construction[4][0] = 0;
+
+	c.letter_construction[0][1] = 0;
+	c.letter_construction[1][1] = 1;
+	c.letter_construction[2][1] = 1;
+	c.letter_construction[3][1] = 0;
+	c.letter_construction[4][1] = 0;
+
+	c.letter_construction[0][2] = 1;
+	c.letter_construction[1][2] = 0;
+	c.letter_construction[2][2] = 0;
+	c.letter_construction[3][2] = 0;
+	c.letter_construction[4][2] = 0;
+
+	c.letter_construction[0][3] = 1;
+	c.letter_construction[1][3] = 0;
+	c.letter_construction[2][3] = 0;
+	c.letter_construction[3][3] = 0;
+	c.letter_construction[4][3] = 0;
+
+	c.letter_construction[0][4] = 1;
+	c.letter_construction[1][4] = 0;
+	c.letter_construction[2][4] = 0;
+	c.letter_construction[3][4] = 0;
+	c.letter_construction[4][4] = 0;
+
+	c.letter_construction[0][5] = 0;
+	c.letter_construction[1][5] = 1;
+	c.letter_construction[2][5] = 1;
+	c.letter_construction[3][5] = 0;
+	c.letter_construction[4][5] = 0;
+
+	c.letter_construction[0][6] = 0;
+	c.letter_construction[1][6] = 0;
+	c.letter_construction[2][6] = 0;
+	c.letter_construction[3][6] = 0;
+	c.letter_construction[4][6] = 0;
+
+
+	/* letter O */
+	o.letter_construction[0][0] = 0;
+	o.letter_construction[1][0] = 0;
+	o.letter_construction[2][0] = 0;
+	o.letter_construction[3][0] = 0;
+	o.letter_construction[4][0] = 0;
+
+	o.letter_construction[0][1] = 0;
+	o.letter_construction[1][1] = 1;
+	o.letter_construction[2][1] = 0;
+	o.letter_construction[3][1] = 0;
+	o.letter_construction[4][1] = 0;
+
+	o.letter_construction[0][2] = 1;
+	o.letter_construction[1][2] = 0;
+	o.letter_construction[2][2] = 1;
+	o.letter_construction[3][2] = 0;
+	o.letter_construction[4][2] = 0;
+
+	o.letter_construction[0][3] = 1;
+	o.letter_construction[1][3] = 0;
+	o.letter_construction[2][3] = 1;
+	o.letter_construction[3][3] = 0;
+	o.letter_construction[4][3] = 0;
+
+	o.letter_construction[0][4] = 1;
+	o.letter_construction[1][4] = 0;
+	o.letter_construction[2][4] = 1;
+	o.letter_construction[3][4] = 0;
+	o.letter_construction[4][4] = 0;
+
+	o.letter_construction[0][5] = 0;
+	o.letter_construction[1][5] = 1;
+	o.letter_construction[2][5] = 1;
+	o.letter_construction[3][5] = 0;
+	o.letter_construction[4][5] = 0;
+
+	o.letter_construction[0][6] = 0;
+	o.letter_construction[1][6] = 0;
+	o.letter_construction[2][6] = 0;
+	o.letter_construction[3][6] = 0;
+	o.letter_construction[4][6] = 0;
+
+	/* letter K */
+	k.letter_construction[0][0] = 0;
+	k.letter_construction[1][0] = 0;
+	k.letter_construction[2][0] = 0;
+	k.letter_construction[3][0] = 0;
+	k.letter_construction[4][0] = 0;
+
+	k.letter_construction[0][1] = 1;
+	k.letter_construction[1][1] = 0;
+	k.letter_construction[2][1] = 1;
+	k.letter_construction[3][1] = 0;
+	k.letter_construction[4][1] = 0;
+
+	k.letter_construction[0][2] = 1;
+	k.letter_construction[1][2] = 0;
+	k.letter_construction[2][2] = 1;
+	k.letter_construction[3][2] = 0;
+	k.letter_construction[4][2] = 0;
+
+	k.letter_construction[0][3] = 1;
+	k.letter_construction[1][3] = 1;
+	k.letter_construction[2][3] = 0;
+	k.letter_construction[3][3] = 0;
+	k.letter_construction[4][3] = 0;
+
+	k.letter_construction[0][4] = 1;
+	k.letter_construction[1][4] = 0;
+	k.letter_construction[2][4] = 1;
+	k.letter_construction[3][4] = 0;
+	k.letter_construction[4][4] = 0;
+
+	k.letter_construction[0][5] = 1;
+	k.letter_construction[1][5] = 0;
+	k.letter_construction[2][5] = 1;
+	k.letter_construction[3][5] = 0;
+	k.letter_construction[4][5] = 0;
+
+	k.letter_construction[0][6] = 0;
+	k.letter_construction[1][6] = 0;
+	k.letter_construction[2][6] = 0;
+	k.letter_construction[3][6] = 0;
+	k.letter_construction[4][6] = 0;
+
+	/* letter M */
+	m.letter_construction[0][0] = 0;
+	m.letter_construction[1][0] = 0;
+	m.letter_construction[2][0] = 0;
+	m.letter_construction[3][0] = 0;
+	m.letter_construction[4][0] = 0;
+
+	m.letter_construction[0][1] = 1;
+	m.letter_construction[1][1] = 1;
+	m.letter_construction[2][1] = 0;
+	m.letter_construction[3][1] = 1;
+	m.letter_construction[4][1] = 0;
+
+	m.letter_construction[0][2] = 1;
+	m.letter_construction[1][2] = 0;
+	m.letter_construction[2][2] = 1;
+	m.letter_construction[3][2] = 0;
+	m.letter_construction[4][2] = 1;
+
+	m.letter_construction[0][3] = 1;
+	m.letter_construction[1][3] = 0;
+	m.letter_construction[2][3] = 1;
+	m.letter_construction[3][3] = 0;
+	m.letter_construction[4][3] = 1;
+
+	m.letter_construction[0][4] = 1;
+	m.letter_construction[1][4] = 0;
+	m.letter_construction[2][4] = 1;
+	m.letter_construction[3][4] = 0;
+	m.letter_construction[4][4] = 1;
+
+	m.letter_construction[0][5] = 1;
+	m.letter_construction[1][5] = 0;
+	m.letter_construction[2][5] = 1;
+	m.letter_construction[3][5] = 0;
+	m.letter_construction[4][5] = 1;
+
+	m.letter_construction[0][6] = 0;
+	m.letter_construction[1][6] = 0;
+	m.letter_construction[2][6] = 0;
+	m.letter_construction[3][6] = 0;
+	m.letter_construction[4][6] = 0;
+
+	/* letter W */
+	w.letter_construction[0][0] = 0;
+	w.letter_construction[1][0] = 0;
+	w.letter_construction[2][0] = 0;
+	w.letter_construction[3][0] = 0;
+	w.letter_construction[4][0] = 0;
+
+	w.letter_construction[0][1] = 1;
+	w.letter_construction[1][1] = 0;
+	w.letter_construction[2][1] = 1;
+	w.letter_construction[3][1] = 0;
+	w.letter_construction[4][1] = 1;
+
+	w.letter_construction[0][2] = 1;
+	w.letter_construction[1][2] = 0;
+	w.letter_construction[2][2] = 1;
+	w.letter_construction[3][2] = 0;
+	w.letter_construction[4][2] = 1;
+
+	w.letter_construction[0][3] = 1;
+	w.letter_construction[1][3] = 0;
+	w.letter_construction[2][3] = 1;
+	w.letter_construction[3][3] = 0;
+	w.letter_construction[4][3] = 1;
+
+	w.letter_construction[0][4] = 1;
+	w.letter_construction[1][4] = 0;
+	w.letter_construction[2][4] = 1;
+	w.letter_construction[3][4] = 0;
+	w.letter_construction[4][4] = 1;
+
+	w.letter_construction[0][5] = 0;
+	w.letter_construction[1][5] = 1;
+	w.letter_construction[2][5] = 0;
+	w.letter_construction[3][5] = 1;
+	w.letter_construction[4][5] = 0;
+
+	w.letter_construction[0][6] = 0;
+	w.letter_construction[1][6] = 0;
+	w.letter_construction[2][6] = 0;
+	w.letter_construction[3][6] = 0;
+	w.letter_construction[4][6] = 0;
+
+	/* letter F */
+	f.letter_construction[0][0] = 0;
+	f.letter_construction[1][0] = 0;
+	f.letter_construction[2][0] = 0;
+	f.letter_construction[3][0] = 0;
+	f.letter_construction[4][0] = 0;
+
+	f.letter_construction[0][1] = 1;
+	f.letter_construction[1][1] = 1;
+	f.letter_construction[2][1] = 1;
+	f.letter_construction[3][1] = 0;
+	f.letter_construction[4][1] = 0;
+
+	f.letter_construction[0][2] = 1;
+	f.letter_construction[1][2] = 0;
+	f.letter_construction[2][2] = 0;
+	f.letter_construction[3][2] = 0;
+	f.letter_construction[4][2] = 0;
+
+	f.letter_construction[0][3] = 1;
+	f.letter_construction[1][3] = 1;
+	f.letter_construction[2][3] = 1;
+	f.letter_construction[3][3] = 0;
+	f.letter_construction[4][3] = 0;
+
+	f.letter_construction[0][4] = 1;
+	f.letter_construction[1][4] = 0;
+	f.letter_construction[2][4] = 0;
+	f.letter_construction[3][4] = 0;
+	f.letter_construction[4][4] = 0;
+
+	f.letter_construction[0][5] = 1;
+	f.letter_construction[1][5] = 0;
+	f.letter_construction[2][5] = 0;
+	f.letter_construction[3][5] = 0;
+	f.letter_construction[4][5] = 0;
+
+	f.letter_construction[0][6] = 0;
+	f.letter_construction[1][6] = 0;
+	f.letter_construction[2][6] = 0;
+	f.letter_construction[3][6] = 0;
+	f.letter_construction[4][6] = 0;
+
+	/* letter N */
+	n.letter_construction[0][0] = 0;
+	n.letter_construction[1][0] = 0;
+	n.letter_construction[2][0] = 0;
+	n.letter_construction[3][0] = 0;
+	n.letter_construction[4][0] = 0;
+
+	n.letter_construction[0][1] = 1;
+	n.letter_construction[1][1] = 1;
+	n.letter_construction[2][1] = 0;
+	n.letter_construction[3][1] = 0;
+	n.letter_construction[4][1] = 0;
+
+	n.letter_construction[0][2] = 1;
+	n.letter_construction[1][2] = 0;
+	n.letter_construction[2][2] = 1;
+	n.letter_construction[3][2] = 0;
+	n.letter_construction[4][2] = 0;
+
+	n.letter_construction[0][3] = 1;
+	n.letter_construction[1][3] = 0;
+	n.letter_construction[2][3] = 1;
+	n.letter_construction[3][3] = 0;
+	n.letter_construction[4][3] = 0;
+
+	n.letter_construction[0][4] = 1;
+	n.letter_construction[1][4] = 0;
+	n.letter_construction[2][4] = 1;
+	n.letter_construction[3][4] = 0;
+	n.letter_construction[4][4] = 0;
+
+	n.letter_construction[0][5] = 1;
+	n.letter_construction[1][5] = 0;
+	n.letter_construction[2][5] = 1;
+	n.letter_construction[3][5] = 0;
+	n.letter_construction[4][5] = 0;
+
+	n.letter_construction[0][6] = 0;
+	n.letter_construction[1][6] = 0;
+	n.letter_construction[2][6] = 0;
+	n.letter_construction[3][6] = 0;
+	n.letter_construction[4][6] = 0;
+
+	/* letter z */
+	z.letter_construction[0][0] = 0;
+	z.letter_construction[1][0] = 0;
+	z.letter_construction[2][0] = 0;
+	z.letter_construction[3][0] = 0;
+	z.letter_construction[4][0] = 0;
+
+	z.letter_construction[0][1] = 1;
+	z.letter_construction[1][1] = 1;
+	z.letter_construction[2][1] = 1;
+	z.letter_construction[3][1] = 0;
+	z.letter_construction[4][1] = 0;
+
+	z.letter_construction[0][2] = 0;
+	z.letter_construction[1][2] = 0;
+	z.letter_construction[2][2] = 1;
+	z.letter_construction[3][2] = 0;
+	z.letter_construction[4][2] = 0;
+
+	z.letter_construction[0][3] = 0;
+	z.letter_construction[1][3] = 1;
+	z.letter_construction[2][3] = 0;
+	z.letter_construction[3][3] = 0;
+	z.letter_construction[4][3] = 0;
+
+	z.letter_construction[0][4] = 1;
+	z.letter_construction[1][4] = 0;
+	z.letter_construction[2][4] = 0;
+	z.letter_construction[3][4] = 0;
+	z.letter_construction[4][4] = 0;
+
+	z.letter_construction[0][5] = 1;
+	z.letter_construction[1][5] = 1;
+	z.letter_construction[2][5] = 1;
+	z.letter_construction[3][5] = 0;
+	z.letter_construction[4][5] = 0;
+
+	z.letter_construction[0][6] = 0;
+	z.letter_construction[1][6] = 0;
+	z.letter_construction[2][6] = 0;
+	z.letter_construction[3][6] = 0;
+	z.letter_construction[4][6] = 0;
+
+	/* letter _ (space) */
+	_.letter_construction[0][0] = 0;
+	_.letter_construction[1][0] = 0;
+	_.letter_construction[2][0] = 0;
+	_.letter_construction[3][0] = 0;
+	_.letter_construction[4][0] = 0;
+
+	_.letter_construction[0][1] = 0;
+	_.letter_construction[1][1] = 0;
+	_.letter_construction[2][1] = 0;
+	_.letter_construction[3][1] = 0;
+	_.letter_construction[4][1] = 0;
+
+	_.letter_construction[0][2] = 0;
+	_.letter_construction[1][2] = 0;
+	_.letter_construction[2][2] = 0;
+	_.letter_construction[3][2] = 0;
+	_.letter_construction[4][2] = 0;
+
+	_.letter_construction[0][3] = 0;
+	_.letter_construction[1][3] = 0;
+	_.letter_construction[2][3] = 0;
+	_.letter_construction[3][3] = 0;
+	_.letter_construction[4][3] = 0;
+
+	_.letter_construction[0][4] = 0;
+	_.letter_construction[1][4] = 0;
+	_.letter_construction[2][4] = 0;
+	_.letter_construction[3][4] = 0;
+	_.letter_construction[4][4] = 0;
+
+	_.letter_construction[0][5] = 0;
+	_.letter_construction[1][5] = 0;
+	_.letter_construction[2][5] = 0;
+	_.letter_construction[3][5] = 0;
+	_.letter_construction[4][5] = 0;
+
+	_.letter_construction[0][6] = 0;
+	_.letter_construction[1][6] = 0;
+	_.letter_construction[2][6] = 0;
+	_.letter_construction[3][6] = 0;
+	_.letter_construction[4][6] = 0;
+
+	/* letter x */
+	x.letter_construction[0][0] = 0;
+	x.letter_construction[1][0] = 0;
+	x.letter_construction[2][0] = 0;
+	x.letter_construction[3][0] = 0;
+	x.letter_construction[4][0] = 0;
+
+	x.letter_construction[0][1] = 1;
+	x.letter_construction[1][1] = 0;
+	x.letter_construction[2][1] = 1;
+	x.letter_construction[3][1] = 0;
+	x.letter_construction[4][1] = 0;
+
+	x.letter_construction[0][2] = 1;
+	x.letter_construction[1][2] = 0;
+	x.letter_construction[2][2] = 1;
+	x.letter_construction[3][2] = 0;
+	x.letter_construction[4][2] = 0;
+
+	x.letter_construction[0][3] = 0;
+	x.letter_construction[1][3] = 1;
+	x.letter_construction[2][3] = 0;
+	x.letter_construction[3][3] = 0;
+	x.letter_construction[4][3] = 0;
+
+	x.letter_construction[0][4] = 1;
+	x.letter_construction[1][4] = 0;
+	x.letter_construction[2][4] = 1;
+	x.letter_construction[3][4] = 0;
+	x.letter_construction[4][4] = 0;
+
+	x.letter_construction[0][5] = 1;
+	x.letter_construction[1][5] = 0;
+	x.letter_construction[2][5] = 1;
+	x.letter_construction[3][5] = 0;
+	x.letter_construction[4][5] = 0;
+
+	x.letter_construction[0][6] = 0;
+	x.letter_construction[1][6] = 0;
+	x.letter_construction[2][6] = 0;
+	x.letter_construction[3][6] = 0;
+	x.letter_construction[4][6] = 0;
+
+	/* letter h */
+	h.letter_construction[0][0] = 0;
+	h.letter_construction[1][0] = 0;
+	h.letter_construction[2][0] = 0;
+	h.letter_construction[3][0] = 0;
+	h.letter_construction[4][0] = 0;
+
+	h.letter_construction[0][1] = 1;
+	h.letter_construction[1][1] = 0;
+	h.letter_construction[2][1] = 1;
+	h.letter_construction[3][1] = 0;
+	h.letter_construction[4][1] = 0;
+
+	h.letter_construction[0][2] = 1;
+	h.letter_construction[1][2] = 0;
+	h.letter_construction[2][2] = 1;
+	h.letter_construction[3][2] = 0;
+	h.letter_construction[4][2] = 0;
+
+	h.letter_construction[0][3] = 1;
+	h.letter_construction[1][3] = 1;
+	h.letter_construction[2][3] = 1;
+	h.letter_construction[3][3] = 0;
+	h.letter_construction[4][3] = 0;
+
+	h.letter_construction[0][4] = 1;
+	h.letter_construction[1][4] = 0;
+	h.letter_construction[2][4] = 1;
+	h.letter_construction[3][4] = 0;
+	h.letter_construction[4][4] = 0;
+
+	h.letter_construction[0][5] = 1;
+	h.letter_construction[1][5] = 0;
+	h.letter_construction[2][5] = 1;
+	h.letter_construction[3][5] = 0;
+	h.letter_construction[4][5] = 0;
+
+	h.letter_construction[0][6] = 0;
+	h.letter_construction[1][6] = 0;
+	h.letter_construction[2][6] = 0;
+	h.letter_construction[3][6] = 0;
+	h.letter_construction[4][6] = 0;
+
+	/* letter d */
+	d.letter_construction[0][0] = 0;
+	d.letter_construction[1][0] = 0;
+	d.letter_construction[2][0] = 0;
+	d.letter_construction[3][0] = 0;
+	d.letter_construction[4][0] = 0;
+
+	d.letter_construction[0][1] = 1;
+	d.letter_construction[1][1] = 1;
+	d.letter_construction[2][1] = 0;
+	d.letter_construction[3][1] = 0;
+	d.letter_construction[4][1] = 0;
+
+	d.letter_construction[0][2] = 1;
+	d.letter_construction[1][2] = 0;
+	d.letter_construction[2][2] = 1;
+	d.letter_construction[3][2] = 0;
+	d.letter_construction[4][2] = 0;
+
+	d.letter_construction[0][3] = 1;
+	d.letter_construction[1][3] = 0;
+	d.letter_construction[2][3] = 1;
+	d.letter_construction[3][3] = 0;
+	d.letter_construction[4][3] = 0;
+
+	d.letter_construction[0][4] = 1;
+	d.letter_construction[1][4] = 0;
+	d.letter_construction[2][4] = 1;
+	d.letter_construction[3][4] = 0;
+	d.letter_construction[4][4] = 0;
+
+	d.letter_construction[0][5] = 1;
+	d.letter_construction[1][5] = 1;
+	d.letter_construction[2][5] = 0;
+	d.letter_construction[3][5] = 0;
+	d.letter_construction[4][5] = 0;
+
+	d.letter_construction[0][6] = 0;
+	d.letter_construction[1][6] = 0;
+	d.letter_construction[2][6] = 0;
+	d.letter_construction[3][6] = 0;
+	d.letter_construction[4][6] = 0;
+
+	/* number zero */
+	nzero.letter_construction[0][0] = 0;
+	nzero.letter_construction[1][0] = 0;
+	nzero.letter_construction[2][0] = 0;
+	nzero.letter_construction[3][0] = 0;
+	nzero.letter_construction[4][0] = 0;
+
+	nzero.letter_construction[0][1] = 1;
+	nzero.letter_construction[1][1] = 1;
+	nzero.letter_construction[2][1] = 1;
+	nzero.letter_construction[3][1] = 0;
+	nzero.letter_construction[4][1] = 0;
+
+	nzero.letter_construction[0][2] = 1;
+	nzero.letter_construction[1][2] = 0;
+	nzero.letter_construction[2][2] = 1;
+	nzero.letter_construction[3][2] = 0;
+	nzero.letter_construction[4][2] = 0;
+
+	nzero.letter_construction[0][3] = 1;
+	nzero.letter_construction[1][3] = 0;
+	nzero.letter_construction[2][3] = 1;
+	nzero.letter_construction[3][3] = 0;
+	nzero.letter_construction[4][3] = 0;
+
+	nzero.letter_construction[0][4] = 1;
+	nzero.letter_construction[1][4] = 0;
+	nzero.letter_construction[2][4] = 1;
+	nzero.letter_construction[3][4] = 0;
+	nzero.letter_construction[4][4] = 0;
+
+	nzero.letter_construction[0][5] = 1;
+	nzero.letter_construction[1][5] = 1;
+	nzero.letter_construction[2][5] = 1;
+	nzero.letter_construction[3][5] = 0;
+	nzero.letter_construction[4][5] = 0;
+
+	nzero.letter_construction[0][6] = 0;
+	nzero.letter_construction[1][6] = 0;
+	nzero.letter_construction[2][6] = 0;
+	nzero.letter_construction[3][6] = 0;
+	nzero.letter_construction[4][6] = 0;
+
+	/* number one */
+	none.letter_construction[0][0] = 0;
+	none.letter_construction[1][0] = 0;
+	none.letter_construction[2][0] = 0;
+	none.letter_construction[3][0] = 0;
+	none.letter_construction[4][0] = 0;
+
+	none.letter_construction[0][1] = 0;
+	none.letter_construction[1][1] = 0;
+	none.letter_construction[2][1] = 1;
+	none.letter_construction[3][1] = 0;
+	none.letter_construction[4][1] = 0;
+
+	none.letter_construction[0][2] = 0;
+	none.letter_construction[1][2] = 0;
+	none.letter_construction[2][2] = 1;
+	none.letter_construction[3][2] = 0;
+	none.letter_construction[4][2] = 0;
+
+	none.letter_construction[0][3] = 0;
+	none.letter_construction[1][3] = 0;
+	none.letter_construction[2][3] = 1;
+	none.letter_construction[3][3] = 0;
+	none.letter_construction[4][3] = 0;
+
+	none.letter_construction[0][4] = 0;
+	none.letter_construction[1][4] = 0;
+	none.letter_construction[2][4] = 1;
+	none.letter_construction[3][4] = 0;
+	none.letter_construction[4][4] = 0;
+
+	none.letter_construction[0][5] = 0;
+	none.letter_construction[1][5] = 0;
+	none.letter_construction[2][5] = 1;
+	none.letter_construction[3][5] = 0;
+	none.letter_construction[4][5] = 0;
+
+	none.letter_construction[0][6] = 0;
+	none.letter_construction[1][6] = 0;
+	none.letter_construction[2][6] = 0;
+	none.letter_construction[3][6] = 0;
+	none.letter_construction[4][6] = 0;
+
+	/* number two */
+	ntwo.letter_construction[0][0] = 0;
+	ntwo.letter_construction[1][0] = 0;
+	ntwo.letter_construction[2][0] = 0;
+	ntwo.letter_construction[3][0] = 0;
+	ntwo.letter_construction[4][0] = 0;
+
+	ntwo.letter_construction[0][1] = 1;
+	ntwo.letter_construction[1][1] = 1;
+	ntwo.letter_construction[2][1] = 1;
+	ntwo.letter_construction[3][1] = 0;
+	ntwo.letter_construction[4][1] = 0;
+
+	ntwo.letter_construction[0][2] = 0;
+	ntwo.letter_construction[1][2] = 0;
+	ntwo.letter_construction[2][2] = 1;
+	ntwo.letter_construction[3][2] = 0;
+	ntwo.letter_construction[4][2] = 0;
+
+	ntwo.letter_construction[0][3] = 1;
+	ntwo.letter_construction[1][3] = 1;
+	ntwo.letter_construction[2][3] = 1;
+	ntwo.letter_construction[3][3] = 0;
+	ntwo.letter_construction[4][3] = 0;
+
+	ntwo.letter_construction[0][4] = 1;
+	ntwo.letter_construction[1][4] = 0;
+	ntwo.letter_construction[2][4] = 0;
+	ntwo.letter_construction[3][4] = 0;
+	ntwo.letter_construction[4][4] = 0;
+
+	ntwo.letter_construction[0][5] = 1;
+	ntwo.letter_construction[1][5] = 1;
+	ntwo.letter_construction[2][5] = 1;
+	ntwo.letter_construction[3][5] = 0;
+	ntwo.letter_construction[4][5] = 0;
+
+	ntwo.letter_construction[0][6] = 0;
+	ntwo.letter_construction[1][6] = 0;
+	ntwo.letter_construction[2][6] = 0;
+	ntwo.letter_construction[3][6] = 0;
+	ntwo.letter_construction[4][6] = 0;
+
+	/* number three */
+	nthree.letter_construction[0][0] = 0;
+	nthree.letter_construction[1][0] = 0;
+	nthree.letter_construction[2][0] = 0;
+	nthree.letter_construction[3][0] = 0;
+	nthree.letter_construction[4][0] = 0;
+
+	nthree.letter_construction[0][1] = 1;
+	nthree.letter_construction[1][1] = 1;
+	nthree.letter_construction[2][1] = 1;
+	nthree.letter_construction[3][1] = 0;
+	nthree.letter_construction[4][1] = 0;
+
+	nthree.letter_construction[0][2] = 0;
+	nthree.letter_construction[1][2] = 0;
+	nthree.letter_construction[2][2] = 1;
+	nthree.letter_construction[3][2] = 0;
+	nthree.letter_construction[4][2] = 0;
+
+	nthree.letter_construction[0][3] = 1;
+	nthree.letter_construction[1][3] = 1;
+	nthree.letter_construction[2][3] = 1;
+	nthree.letter_construction[3][3] = 0;
+	nthree.letter_construction[4][3] = 0;
+
+	nthree.letter_construction[0][4] = 0;
+	nthree.letter_construction[1][4] = 0;
+	nthree.letter_construction[2][4] = 1;
+	nthree.letter_construction[3][4] = 0;
+	nthree.letter_construction[4][4] = 0;
+
+	nthree.letter_construction[0][5] = 1;
+	nthree.letter_construction[1][5] = 1;
+	nthree.letter_construction[2][5] = 1;
+	nthree.letter_construction[3][5] = 0;
+	nthree.letter_construction[4][5] = 0;
+
+	nthree.letter_construction[0][6] = 0;
+	nthree.letter_construction[1][6] = 0;
+	nthree.letter_construction[2][6] = 0;
+	nthree.letter_construction[3][6] = 0;
+	nthree.letter_construction[4][6] = 0;
+
+	/* number four */
+	nfour.letter_construction[0][0] = 0;
+	nfour.letter_construction[1][0] = 0;
+	nfour.letter_construction[2][0] = 0;
+	nfour.letter_construction[3][0] = 0;
+	nfour.letter_construction[4][0] = 0;
+
+	nfour.letter_construction[0][1] = 1;
+	nfour.letter_construction[1][1] = 0;
+	nfour.letter_construction[2][1] = 1;
+	nfour.letter_construction[3][1] = 0;
+	nfour.letter_construction[4][1] = 0;
+
+	nfour.letter_construction[0][2] = 1;
+	nfour.letter_construction[1][2] = 0;
+	nfour.letter_construction[2][2] = 1;
+	nfour.letter_construction[3][2] = 0;
+	nfour.letter_construction[4][2] = 0;
+
+	nfour.letter_construction[0][3] = 1;
+	nfour.letter_construction[1][3] = 1;
+	nfour.letter_construction[2][3] = 1;
+	nfour.letter_construction[3][3] = 0;
+	nfour.letter_construction[4][3] = 0;
+
+	nfour.letter_construction[0][4] = 0;
+	nfour.letter_construction[1][4] = 0;
+	nfour.letter_construction[2][4] = 1;
+	nfour.letter_construction[3][4] = 0;
+	nfour.letter_construction[4][4] = 0;
+
+	nfour.letter_construction[0][5] = 0;
+	nfour.letter_construction[1][5] = 0;
+	nfour.letter_construction[2][5] = 1;
+	nfour.letter_construction[3][5] = 0;
+	nfour.letter_construction[4][5] = 0;
+
+	nfour.letter_construction[0][6] = 0;
+	nfour.letter_construction[1][6] = 0;
+	nfour.letter_construction[2][6] = 0;
+	nfour.letter_construction[3][6] = 0;
+	nfour.letter_construction[4][6] = 0;
+
+	/* number five */
+	nfive.letter_construction[0][0] = 0;
+	nfive.letter_construction[1][0] = 0;
+	nfive.letter_construction[2][0] = 0;
+	nfive.letter_construction[3][0] = 0;
+	nfive.letter_construction[4][0] = 0;
+
+	nfive.letter_construction[0][1] = 1;
+	nfive.letter_construction[1][1] = 1;
+	nfive.letter_construction[2][1] = 1;
+	nfive.letter_construction[3][1] = 0;
+	nfive.letter_construction[4][1] = 0;
+
+	nfive.letter_construction[0][2] = 1;
+	nfive.letter_construction[1][2] = 0;
+	nfive.letter_construction[2][2] = 0;
+	nfive.letter_construction[3][2] = 0;
+	nfive.letter_construction[4][2] = 0;
+
+	nfive.letter_construction[0][3] = 1;
+	nfive.letter_construction[1][3] = 1;
+	nfive.letter_construction[2][3] = 1;
+	nfive.letter_construction[3][3] = 0;
+	nfive.letter_construction[4][3] = 0;
+
+	nfive.letter_construction[0][4] = 0;
+	nfive.letter_construction[1][4] = 0;
+	nfive.letter_construction[2][4] = 1;
+	nfive.letter_construction[3][4] = 0;
+	nfive.letter_construction[4][4] = 0;
+
+	nfive.letter_construction[0][5] = 1;
+	nfive.letter_construction[1][5] = 1;
+	nfive.letter_construction[2][5] = 1;
+	nfive.letter_construction[3][5] = 0;
+	nfive.letter_construction[4][5] = 0;
+
+	nfive.letter_construction[0][6] = 0;
+	nfive.letter_construction[1][6] = 0;
+	nfive.letter_construction[2][6] = 0;
+	nfive.letter_construction[3][6] = 0;
+	nfive.letter_construction[4][6] = 0;
+
+	/* number six */
+	nsix.letter_construction[0][0] = 0;
+	nsix.letter_construction[1][0] = 0;
+	nsix.letter_construction[2][0] = 0;
+	nsix.letter_construction[3][0] = 0;
+	nsix.letter_construction[4][0] = 0;
+
+	nsix.letter_construction[0][1] = 1;
+	nsix.letter_construction[1][1] = 1;
+	nsix.letter_construction[2][1] = 1;
+	nsix.letter_construction[3][1] = 0;
+	nsix.letter_construction[4][1] = 0;
+
+	nsix.letter_construction[0][2] = 1;
+	nsix.letter_construction[1][2] = 0;
+	nsix.letter_construction[2][2] = 0;
+	nsix.letter_construction[3][2] = 0;
+	nsix.letter_construction[4][2] = 0;
+
+	nsix.letter_construction[0][3] = 1;
+	nsix.letter_construction[1][3] = 1;
+	nsix.letter_construction[2][3] = 1;
+	nsix.letter_construction[3][3] = 0;
+	nsix.letter_construction[4][3] = 0;
+
+	nsix.letter_construction[0][4] = 1;
+	nsix.letter_construction[1][4] = 0;
+	nsix.letter_construction[2][4] = 1;
+	nsix.letter_construction[3][4] = 0;
+	nsix.letter_construction[4][4] = 0;
+
+	nsix.letter_construction[0][5] = 1;
+	nsix.letter_construction[1][5] = 1;
+	nsix.letter_construction[2][5] = 1;
+	nsix.letter_construction[3][5] = 0;
+	nsix.letter_construction[4][5] = 0;
+
+	nsix.letter_construction[0][6] = 0;
+	nsix.letter_construction[1][6] = 0;
+	nsix.letter_construction[2][6] = 0;
+	nsix.letter_construction[3][6] = 0;
+	nsix.letter_construction[4][6] = 0;
+
+	/* number seven */
+	nseven.letter_construction[0][0] = 0;
+	nseven.letter_construction[1][0] = 0;
+	nseven.letter_construction[2][0] = 0;
+	nseven.letter_construction[3][0] = 0;
+	nseven.letter_construction[4][0] = 0;
+
+	nseven.letter_construction[0][1] = 1;
+	nseven.letter_construction[1][1] = 1;
+	nseven.letter_construction[2][1] = 1;
+	nseven.letter_construction[3][1] = 0;
+	nseven.letter_construction[4][1] = 0;
+
+	nseven.letter_construction[0][2] = 0;
+	nseven.letter_construction[1][2] = 0;
+	nseven.letter_construction[2][2] = 1;
+	nseven.letter_construction[3][2] = 0;
+	nseven.letter_construction[4][2] = 0;
+
+	nseven.letter_construction[0][3] = 0;
+	nseven.letter_construction[1][3] = 0;
+	nseven.letter_construction[2][3] = 1;
+	nseven.letter_construction[3][3] = 0;
+	nseven.letter_construction[4][3] = 0;
+
+	nseven.letter_construction[0][4] = 0;
+	nseven.letter_construction[1][4] = 0;
+	nseven.letter_construction[2][4] = 1;
+	nseven.letter_construction[3][4] = 0;
+	nseven.letter_construction[4][4] = 0;
+
+	nseven.letter_construction[0][5] = 0;
+	nseven.letter_construction[1][5] = 0;
+	nseven.letter_construction[2][5] = 1;
+	nseven.letter_construction[3][5] = 0;
+	nseven.letter_construction[4][5] = 0;
+
+	nseven.letter_construction[0][6] = 0;
+	nseven.letter_construction[1][6] = 0;
+	nseven.letter_construction[2][6] = 0;
+	nseven.letter_construction[3][6] = 0;
+	nseven.letter_construction[4][6] = 0;
+
+	/* number eight */
+	neight.letter_construction[0][0] = 0;
+	neight.letter_construction[1][0] = 0;
+	neight.letter_construction[2][0] = 0;
+	neight.letter_construction[3][0] = 0;
+	neight.letter_construction[4][0] = 0;
+
+	neight.letter_construction[0][1] = 1;
+	neight.letter_construction[1][1] = 1;
+	neight.letter_construction[2][1] = 1;
+	neight.letter_construction[3][1] = 0;
+	neight.letter_construction[4][1] = 0;
+
+	neight.letter_construction[0][2] = 1;
+	neight.letter_construction[1][2] = 0;
+	neight.letter_construction[2][2] = 1;
+	neight.letter_construction[3][2] = 0;
+	neight.letter_construction[4][2] = 0;
+
+	neight.letter_construction[0][3] = 1;
+	neight.letter_construction[1][3] = 1;
+	neight.letter_construction[2][3] = 1;
+	neight.letter_construction[3][3] = 0;
+	neight.letter_construction[4][3] = 0;
+
+	neight.letter_construction[0][4] = 1;
+	neight.letter_construction[1][4] = 0;
+	neight.letter_construction[2][4] = 1;
+	neight.letter_construction[3][4] = 0;
+	neight.letter_construction[4][4] = 0;
+
+	neight.letter_construction[0][5] = 1;
+	neight.letter_construction[1][5] = 1;
+	neight.letter_construction[2][5] = 1;
+	neight.letter_construction[3][5] = 0;
+	neight.letter_construction[4][5] = 0;
+
+	neight.letter_construction[0][6] = 0;
+	neight.letter_construction[1][6] = 0;
+	neight.letter_construction[2][6] = 0;
+	neight.letter_construction[3][6] = 0;
+	neight.letter_construction[4][6] = 0;
+
+	/* number nine */
+	nnine.letter_construction[0][0] = 0;
+	nnine.letter_construction[1][0] = 0;
+	nnine.letter_construction[2][0] = 0;
+	nnine.letter_construction[3][0] = 0;
+	nnine.letter_construction[4][0] = 0;
+
+	nnine.letter_construction[0][1] = 1;
+	nnine.letter_construction[1][1] = 1;
+	nnine.letter_construction[2][1] = 1;
+	nnine.letter_construction[3][1] = 0;
+	nnine.letter_construction[4][1] = 0;
+
+	nnine.letter_construction[0][2] = 1;
+	nnine.letter_construction[1][2] = 0;
+	nnine.letter_construction[2][2] = 1;
+	nnine.letter_construction[3][2] = 0;
+	nnine.letter_construction[4][2] = 0;
+
+	nnine.letter_construction[0][3] = 1;
+	nnine.letter_construction[1][3] = 1;
+	nnine.letter_construction[2][3] = 1;
+	nnine.letter_construction[3][3] = 0;
+	nnine.letter_construction[4][3] = 0;
+
+	nnine.letter_construction[0][4] = 0;
+	nnine.letter_construction[1][4] = 0;
+	nnine.letter_construction[2][4] = 1;
+	nnine.letter_construction[3][4] = 0;
+	nnine.letter_construction[4][4] = 0;
+
+	nnine.letter_construction[0][5] = 1;
+	nnine.letter_construction[1][5] = 1;
+	nnine.letter_construction[2][5] = 1;
+	nnine.letter_construction[3][5] = 0;
+	nnine.letter_construction[4][5] = 0;
+
+	nnine.letter_construction[0][6] = 0;
+	nnine.letter_construction[1][6] = 0;
+	nnine.letter_construction[2][6] = 0;
+	nnine.letter_construction[3][6] = 0;
+	nnine.letter_construction[4][6] = 0;
+}
+
+/**
+  * @brief  draws a a letter into the IO buffer
+  * @note   None
+  * @retval None
+  */
+Letter char_to_letter(char charistic){
+	Letter letter;
+	switch(charistic){
+		case 'm':	return letter = m;
+		break;
+		case 'w':	return letter = w;
+		break;
+		case 'a':	return letter = a;
+		break;
+		case 'd':	return letter = d;
+		break;
+		case 'e':	return letter = e;
+		break;
+		case 'f':	return letter = f;
+		break;
+		case 'h':	return letter = h;
+		break;
+		case 'i':	return letter = i;
+		break;
+		case 'l':	return letter = l;
+		break;
+		case 'r':	return letter = r;
+		break;
+		case 's':	return letter = s;
+		break;
+		case 't':	return letter = t;
+		break;
+		case 'u':	return letter = u;
+		break;
+		case 'p':	return letter = p;
+		break;
+		case 'c':	return letter = c;
+		break;
+		case 'o':	return letter = o;
+		break;
+		case 'k':	return letter = k;
+		break;
+		case 'n':	return letter = n;
+		break;
+		case ' ':	return letter = _;
+		break;
+		case 'x':	return letter = x;
+		break;
+		case 'z':	return letter = z;
+		break;
+		case '0':	return letter = nzero;
+		break;
+		case '1':	return letter = none;
+		break;
+		case '2':	return letter = ntwo;
+		break;
+		case '3':	return letter = nthree;
+		break;
+		case '4':	return letter = nfour;
+		break;
+		case '5':	return letter = nfive;
+		break;
+		case '6':	return letter = nsix;
+		break;
+		case '7':	return letter = nseven;
+		break;
+		case '8':	return letter = neight;
+		break;
+		case '9':	return letter = nnine;
+		break;
+		default: return letter = a;
+
+	}
+}
+
+/**
+  * @brief  draws a a letter into the IO buffer
+  * @note   None
+  * @retval None
+  */
+Number char_to_number(char charistic){
+	Number number;
+	switch(charistic){
+		case '0':	return number = zero;
+		break;
+		case '1':	return number = one;
+		break;
+		case '2':	return number = two;
+		break;
+		case '3':	return number = three;
+		break;
+		case '4':	return number = four;
+		break;
+		case '5':	return number = five;
+		break;
+		case '6':	return number = six;
+		break;
+		case '7':	return number = seven;
+		break;
+		case '8':	return number = eight;
+		break;
+		case '9':	return number = nine;
+		break;
+		case ':':	return number = doublepoint;
+		break;
+		default: return number = zero;
+	}
+}
 
 /* This function sets the color of a single pixel in the clock_background_framebuffer
  *
@@ -559,7 +2381,7 @@ void WS2812_led_test(){
 				WS2812_color_wheel_plus(&redtest, &greentest, &bluetest);
 			}
 			/* shift 1 row up */
-			for(uint16_t j=0; j<ROW; j++){
+			for(uint16_t j=0; j<ROW-1; j++){
 				for(uint16_t s=0; s<3*COL; s++){
 					clock_background_framebuffer[j*COL*3+s] = clock_background_framebuffer[(j+1)*COL*3+s];
 				}
@@ -636,70 +2458,216 @@ void WS2812_background_matrix(){
 }
 
 /**
-  * @brief  equalizer effect background
-  * @note   this function is used to test the rgb leds on all colors
+  * @brief  this function sets the foregroundcolor
+  * @note   this function sets the foregroundcolor
   * @retval -
   */
-void WS2812_background_equalizer(){
-	/* variables */
-	uint8_t hex_value;
-	double hex_value_float;
-	double m = 0.128; //0.128
-	uint32_t adc_value;
-	uint32_t adc_value_temp;
-
-	/* start adc and read conversion */
-	start_microphone_adc_conversion();
-	//for(uint i=0; i<10;i++){
-		get_microphone_adc_conversion(&adc_value_temp);
-		//adc_value += adc_value_temp;
-	//}
-	//stop_microphone_adc_conversion();
-
-	//adc_value /= 10;
-	adc_value = adc_value_temp;
-
-	/* convert conversion into hex value 0x00 - 0xFF */
-
-	if(adc_value >= 2000 && adc_value < 4000){
-		hex_value_float = m*(double)adc_value-256;
-		hex_value = (uint8_t)hex_value_float;
-	}else if(adc_value >= 4000){
-		hex_value = 0xff;
-	}else{
-		hex_value = 0x00;
+void WS2812_foreground_colour(uint8_t red, uint8_t green, uint8_t blue){
+	/* clear frame buffer */
+	for(uint8_t y=0; y<ROW;y++){
+		for(uint16_t x=0; x<COL; x++){
+			WS2812_framedata_setPixel(y, x, red, green, blue);
+		}
 	}
+	while(!WS2812_TC);
+	/* send frame buffer to the leds */
+	sendbuf_WS2812();
+}
 
-	/* set background color according to adc conversion */
-	for(uint8_t y = 0; y < 11; y++){
-		for(uint16_t x = 0; x < 11; x++){
-			WS2812_framedata_setPixel(y, x, hex_value, 0x00, 0x00);
+/**
+  * @brief  this function lets the display flash
+  * @note   this function lets the display flash
+  * @retval -
+  */
+uint8_t WS2812_display_flash(uint32_t speed_ms, uint8_t flash_count){
+	for(uint8_t i = 0; i<flash_count; i++){
+		if(stop_flag){
+			stop_flag = 0;
+			return 1;
+		}
+		/* set foreground to white */
+		WS2812_foreground_colour(0xFF, 0xFF , 0xFF);
+		/* wait until peripherals are ready */
+		while(!WS2812_TC);
+		/* send frame buffer to the leds */
+		sendbuf_WS2812();
+		/* wait specified time */
+		HAL_Delay(speed_ms>>2);
+		/* clear display */
+		WS2812_foreground_colour(0x00, 0x00, 0x00);
+		/* wait until peripherals are ready */
+		while(!WS2812_TC);
+		/* send frame buffer to the leds */
+		sendbuf_WS2812();
+		/* wait specified time */
+		HAL_Delay(speed_ms>>2);
+	}
+}
+
+/**
+  * @brief  led test
+  * @note   this function shows a colorfall on the display
+  * @retval -
+  */
+uint8_t WS2812_display_colorfall(void){
+	uint8_t redtest = 0xff;
+	uint8_t greentest = 0x00;
+	uint8_t bluetest = 0x00;
+
+	for(uint16_t i = 0; i<20; i++){
+		if(stop_flag){
+			stop_flag = 0;
+			return 1;
+		}
+		while(!WS2812_TC);
+		/* fill the complete buffer at first round */
+		if(i == 0){
+			for(uint8_t y = 0; y<ROW; y++){
+				/* set the color with the color wheel function */
+				for(uint8_t s=0; s<20; s++){
+					WS2812_color_wheel_plus(&redtest, &greentest, &bluetest);
+				}
+				for(uint16_t x = 0; x<COL; x++){
+					/* fill buffer for first frame */
+					clock_background_framebuffer[(y*COL*3)+(x*3)] = redtest;
+					clock_background_framebuffer[(y*COL*3)+(x*3)+1] = greentest;
+					clock_background_framebuffer[(y*COL*3)+(x*3)+2] = bluetest;
+				}
+			}
+		}else{
+			/* set the color with the color wheel function */
+			for(uint8_t s=0; s<15; s++){
+				WS2812_color_wheel_plus(&redtest, &greentest, &bluetest);
+			}
+			/* shift 1 row up */
+			for(uint16_t j=0; j<ROW-1; j++){
+				for(uint16_t s=0; s<3*COL; s++){
+					clock_background_framebuffer[j*COL*3+s] = clock_background_framebuffer[(j+1)*COL*3+s];
+				}
+			}
+			/* write new color in bottom row */
+			for(uint16_t j=0; j<COL; j++){
+				clock_background_framebuffer[((ROW-1)*COL*3)+(j*3)] = redtest;
+				clock_background_framebuffer[((ROW-1)*COL*3)+(j*3)+1] = greentest;
+				clock_background_framebuffer[((ROW-1)*COL*3)+(j*3)+2] = bluetest;
+			}
+		}
+		/* write buffer into buffer... lol */
+		for(uint8_t y = 0; y<ROW; y++){
+			for(uint16_t x = 0; x<COL; x++){
+				WS2812_framedata_setPixel(y, x, (uint8_t)clock_background_framebuffer[(y*COL*3)+(x*3)], (uint8_t)clock_background_framebuffer[(y*COL*3)+(x*3)+1], (uint8_t)clock_background_framebuffer[(y*COL*3)+(x*3)+2]);
+			}
+		}
+		sendbuf_WS2812();
+		HAL_Delay(10);
+	}
+}
+
+/**
+  * @brief  stops running animations
+  * @note   None
+  * @retval None
+  */
+void WS2812_stop_animation(void){
+	stop_flag = 1;
+}
+
+/**
+  * @brief  draws a a letter into the IO buffer
+  * @note   None
+  * @retval None
+  */
+void draw_letter(char character, int16_t x_offset, int8_t y_offset, uint8_t *red, uint8_t *green, uint8_t *blue, uint16_t *ambient_factor){
+	for(int16_t x = 0; x < 5; x++){
+		for(int8_t y = 0; y < 7; y++){
+			if(char_to_letter(character).letter_construction[x][y] != 0 && (y_offset+y >= 0) && (y_offset+y < ROW) && (x_offset+x >= 0) && (x_offset+x < COL)){
+				WS2812_framedata_setPixel((uint8_t)y_offset + (uint8_t)y, (uint16_t)x_offset + (uint16_t)x, (uint8_t)*red*(uint8_t)*ambient_factor, (uint8_t)*green*(uint8_t)*ambient_factor, (uint8_t)*blue*(uint8_t)*ambient_factor);
+			}
 		}
 	}
 }
 
 /**
-  * @brief  sets the background effect
-  * @note   input is a number which is used to choose the background effect in a switch case
-  * @retval -
+  * @brief  draws a a number into the IO buffer
+  * @note   None
+  * @retval None
   */
-WS2812_set_clock_fx(uint8_t *fx_mode, uint32_t *counter, uint8_t *red, uint8_t *green, uint8_t *blue){
-	/* set background/fx mode */
-	switch(*fx_mode){
-		case 0: WS2812_clear_buffer();
-		break;
-		case 1:	if(*counter%50 == 0 || *counter == 0){
-					WS2812_clear_buffer();
-					WS2812_background_matrix();
+void draw_number(char character, int16_t x_offset, int8_t y_offset, uint8_t *red, uint8_t *green, uint8_t *blue, uint16_t *ambient_factor){
+	for(int16_t x = 0; x < 3; x++){
+		for(int8_t y = 0; y < 7; y++){
+			if(char_to_number(character).number_construction[x][y] != 0 && (y_offset+y >= 0) && (y_offset+y < ROW) && (x_offset+x >= 0) && (x_offset+x < COL)){
+				WS2812_framedata_setPixel((uint8_t)y_offset + (uint8_t)y, (uint16_t)x_offset + (uint16_t)x, (uint8_t)*red*(uint8_t)*ambient_factor, (uint8_t)*green*(uint8_t)*ambient_factor, (uint8_t)*blue*(uint8_t)*ambient_factor);
+			}
+		}
+	}
+}
+
+/**
+  * @brief  draws a a letter into the IO buffer
+  * @note   None
+  * @retval None
+  */
+void draw_string(char *string, int16_t x_offset, int8_t y_offset, uint8_t *red, uint8_t *green, uint8_t *blue, uint16_t *ambient_factor){
+	int16_t length = strlen(string);
+	int16_t x_offset_letter = x_offset;
+	int16_t additional_frame = 0;
+	/* calculate the amount of frames to roll the whole text through the display */
+	for(uint8_t i = 0; i < length; i++){
+		if(*(string+i+1) == 'm' || *(string+i+1) == 'w'){
+			additional_frame+=2;
+		}
+	}
+	/* if text length is longer than the display, let it run through it, else just write text on it*/
+	if(4*length > COL){
+		/* write and display */
+		for(int16_t j = 0; j>((-4)*length)+(17)-additional_frame; j--){
+			/* erase frame buffer */
+			WS2812_clear_buffer();
+			/* write letters into buffer for 1 frame */
+			for(uint8_t i = 0; i < length; i++){
+				draw_letter(*(string+i), j+x_offset_letter, y_offset, red, green, blue, ambient_factor);
+				if(*(string+i+1) == 'm' || *(string+i+1) == 'w'){
+					x_offset_letter += 4;
+				}else if(*(string+i) == 'm' || *(string+i) == 'w'){
+					x_offset_letter += 6;
+				}else{
+					x_offset_letter += 4;
 				}
-		break;
-		case 2:	WS2812_clear_buffer();
-				WS2812_background_equalizer();
-		break;
-		case 3:	if(*counter%50 == 0){
-					WS2812_clear_buffer();
-					WS2812_color_wheel_plus(red,green,blue);
-				}
-		break;
+			}
+			x_offset_letter = x_offset;
+			/* wait for the data transmission to the led's to be ready */
+			while(!WS2812_TC);
+			/* send frame buffer to the leds */
+			sendbuf_WS2812();
+			/* delay that the user can read the message */
+			/* roll through the text with XX ms period */
+			if(j == 0){
+				HAL_Delay(500);
+			}else{
+				HAL_Delay(30);
+			}
+		}
+		/* wait a bit to show the letters */
+		HAL_Delay(500);
+	}else{
+		/* erase frame buffer */
+		WS2812_clear_buffer();
+		/* write letters into buffer for 1 frame */
+		for(uint8_t i = 0; i < length; i++){
+			draw_letter(*(string+i), x_offset_letter, y_offset, red, green, blue, ambient_factor);
+			if(*(string+i+1) == 'm' || *(string+i+1) == 'w'){
+				x_offset_letter += 4;
+			}else if(*(string+i) == 'm' || *(string+i) == 'w'){
+				x_offset_letter += 6;
+			}else{
+				x_offset_letter += 4;
+			}
+		}
+		x_offset_letter = x_offset;
+		/* wait for the data transmission to the led's to be ready */
+		while(!WS2812_TC);
+		/* send frame buffer to the leds */
+		sendbuf_WS2812();
+		/* delay that the user can read the message */
 	}
 }

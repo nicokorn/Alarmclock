@@ -42,9 +42,12 @@
 #include "stm32f1xx_it.h"
 
 /* External variables --------------------------------------------------------*/
+extern TIM_HandleTypeDef    TIM1_Handle;
+extern TIM_HandleTypeDef    TIM3_Handle;
 extern TIM_HandleTypeDef    TIM4_Handle;
 extern RTC_HandleTypeDef 	RTC_Handle;
 extern ADC_HandleTypeDef 	ADC_Handle;
+extern Alarmclock			alarmclock;
    
 /** @addtogroup STM32F1xx_HAL_Examples
   * @{
@@ -239,6 +242,23 @@ void EXTI15_10_IRQHandler(void){
 }
 
 /**
+  * @brief  This function handles Timer 3 interrupt requests.
+  * @param  None
+  * @retval None
+  */
+void TIM1_UP_IRQHandler(void){
+	/* TIM1 Update event */
+	if(__HAL_TIM_GET_FLAG(&TIM1_Handle, TIM_FLAG_UPDATE) != RESET){
+		if(__HAL_TIM_GET_IT_SOURCE(&TIM1_Handle, TIM_IT_UPDATE) !=RESET){
+			/* clear interrupt pending bits */
+			__HAL_TIM_CLEAR_IT(&TIM1_Handle, TIM_IT_UPDATE);
+			/* call callback */
+			BUTTON_TIM1_Callback();
+		}
+	}
+}
+
+/**
   * @brief  This function handles Timer 2 interrupt requests.
   * @note   None
   * @retval None
@@ -252,6 +272,23 @@ void TIM2_IRQHandler(void){
   * @param  None
   * @retval None
   */
+void TIM3_IRQHandler(void){
+	/* TIM3 Update event */
+	if(__HAL_TIM_GET_FLAG(&TIM3_Handle, TIM_FLAG_UPDATE) != RESET){
+		if(__HAL_TIM_GET_IT_SOURCE(&TIM3_Handle, TIM_IT_UPDATE) !=RESET){
+			/* clear interrupt pending bits */
+			__HAL_TIM_CLEAR_IT(&TIM3_Handle, TIM_IT_UPDATE);
+			/* call callback */
+			SNOOZE_TIM3_callback(&alarmclock);
+		}
+	}
+}
+
+/**
+  * @brief  This function handles Timer 4 interrupt requests.
+  * @param  None
+  * @retval None
+  */
 void TIM4_IRQHandler(void){
 	/* TIM4 Update event */
 	if(__HAL_TIM_GET_FLAG(&TIM4_Handle, TIM_FLAG_UPDATE) != RESET){
@@ -259,7 +296,7 @@ void TIM4_IRQHandler(void){
 			/* clear interrupt pending bits */
 			__HAL_TIM_CLEAR_IT(&TIM4_Handle, TIM_IT_UPDATE);
 			/* call callback */
-			BUZZER_TIM4_callback();
+			BUZZER_TIM4_callback(&alarmclock);
 		}
 	}
 }
@@ -276,7 +313,7 @@ void RTC_Alarm_IRQHandler(void){
 	    if(__HAL_RTC_ALARM_GET_FLAG(&RTC_Handle, RTC_FLAG_ALRAF) != (uint32_t)RESET)
 	    {
 	      /* Alarm callback */
-	      RTC_AlarmEventCallback();
+	      RTC_AlarmEventCallback(&alarmclock);
 
 	      /* Clear the Alarm interrupt pending bit */
 	      __HAL_RTC_ALARM_CLEAR_FLAG(&RTC_Handle,RTC_FLAG_ALRAF);

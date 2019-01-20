@@ -37,15 +37,7 @@
 #include "button.h"
 #include "buzzer.h"
 #include "lightsensor.h"
-
-/*
-* @brief  enumeration for queue resource locking
-  */
-typedef enum
-{
-	QUNLOCKED,
-	QLOCKED
-}Queue_Lock;
+#include "event.h"
 
 #endif /* __MAIN_H */
 

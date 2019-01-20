@@ -31,7 +31,7 @@
 #include "lightsensor.h"
 
 /* defines */
-#define BUFFERSIZE			64
+#define BUFFERSIZE			32
 
 /* private variables */
 static uint16_t 			adc_buffer[BUFFERSIZE];
@@ -43,7 +43,9 @@ DMA_HandleTypeDef 			DMA_Handle;
 RCC_PeriphCLKInitTypeDef  	PeriphClkInit;
 ADC_ChannelConfTypeDef 		ADCChConfig;
 GPIO_InitTypeDef 			GPIO_InitStruct_Light;
-uint16_t 					ambientlight_factor, adc_raw;
+uint16_t 					ambientlight_factor;
+uint16_t 					array_averaged;
+uint32_t					adc_raw;
 
 /**
   * @brief  initialization of lightsensor
@@ -59,10 +61,10 @@ void init_lightsensor(Alarmclock *alarmclock_param){
 	init_gpio_lightsensor();
 	init_dma_lightsensor();
 	init_adc_lightsensor();
-	init_timer_lightsensor();
+	//init_timer_lightsensor();
 	/* start adc */
-	HAL_TIM_Base_Start(&TIM3_Handle);
-	HAL_ADC_Start_DMA(&ADC_Handle, &adc_raw, 1);
+	//HAL_TIM_Base_Start(&TIM3_Handle);
+	//HAL_ADC_Start_DMA(&ADC_Handle, &adc_raw, 1);
 }
 
 /**
@@ -169,7 +171,7 @@ void init_adc_lightsensor(){
 	ADC_Handle.Init.DiscontinuousConvMode 		= DISABLE;
 	ADC_Handle.Init.DataAlign 					= ADC_DATAALIGN_RIGHT;
 	ADC_Handle.Init.ScanConvMode 				= ADC_SCAN_DISABLE;			// Sequencer disabled (ADC conversion on only 1 channel: channel set on rank 1)
-	ADC_Handle.Init.ExternalTrigConv 			= ADC1_2_EXTERNALTRIG_T3_TRGO;
+	ADC_Handle.Init.ExternalTrigConv 			= ADC1_2_3_SWSTART;
 	HAL_ADC_Init(&ADC_Handle);
 
 	/* Channel configuration */
@@ -193,8 +195,7 @@ void init_adc_lightsensor(){
   * @retval None
   */
 void start_lightsensor_adc_conversion(){
-	HAL_ADC_Start(&ADC_Handle);
-	HAL_Delay(1);
+	HAL_ADC_Start_DMA(&ADC_Handle, &adc_raw, 1);
 }
 
 /**
@@ -223,7 +224,6 @@ void get_lightsensor_adc_conversion(uint32_t *adc_conversion){
  */
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 	uint32_t array_cumulus = 0;
-	uint16_t array_averaged = 0;
 	//static const uint16_t schmitt_base_th = 2;
 	static uint16_t schmitt_ex_th = 2;
 
@@ -240,12 +240,27 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 
 	/* notice! a pointer from the alarmclock typpdef points to the variable "ambientlight_factor" */
 	if(array_averaged <= schmitt_ex_th){
-		ambientlight_factor = 1;
-		schmitt_ex_th = 2;//schmitt_base_th + 2;
+		//ambientlight_factor = 1;
+		if(ambientlight_factor > 2){
+			ambientlight_factor--;
+		}
+		schmitt_ex_th = 3;//schmitt_base_th + 2;
 	}else{
-		ambientlight_factor = 24;
+		if(ambientlight_factor < 26){
+			ambientlight_factor++;
+		}
+		//ambientlight_factor = 25; //24
 		schmitt_ex_th = 0;//schmitt_base_th - 2;
 	}
+}
+
+/**
+  * @brief  get averraged lux value
+  * @note   None
+  * @retval None
+  */
+uint16_t get_avr_lux(void){
+	return array_averaged;
 }
 
 /**
@@ -254,8 +269,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
   * @retval None
   */
 void init_filter(){
-	/* init the filter with zeros */
+	/* init the filter with 32's (LUX preload) */
 	for(uint16_t i = 0; i<BUFFERSIZE; i++){
-		adc_buffer[i] = 0;
+		adc_buffer[i] = 50;
 	}
 }

@@ -32,49 +32,29 @@
 
 /* defines */
 #define SETUP_CLOCK_BLINKING_PERIOD	1000 // in ms
+/* uncomment this to use the development mode to have modes like displayed ambient light measurement */
+//#define DEV_MODE
 
-/* variables */
-static Number 				zero;
-static Number 				one;
-static Number 				two;
-static Number 				three;
-static Number 				four;
-static Number 				five;
-static Number 				six;
-static Number 				seven;
-static Number 				eight;
-static Number 				nine;
-static Number 				doublepoint;
-static Letter 				m;
-static Letter 				w;
-static Letter 				a;
-static Letter 				e;
-static Letter 				i;
-static Letter				l;
-static Letter				r;
-static Letter				s;
-static Letter 				t;
-static Letter 				u;
-static Letter 				p;
-static Letter				c;
-static Letter				o;
-static Letter				k;
+
+/* private variables */
+static uint8_t				mode_count;
 static uint8_t	 			h0, h1, m0, m1;
 static uint8_t	 			h0_old, h1_old, m0_old, m1_old, init;
 static uint8_t	 			h0_time_change_flag, h1_time_change_flag, m0_time_change_flag, m1_time_change_flag;
 static int16_t 				h0_x_offset, h1_x_offset, m0_x_offset, m1_x_offset, x_offset;
 static int8_t 				h0_y_offset, h1_y_offset, m0_y_offset, m1_y_offset, y_offset;
 static uint8_t 				color_pattern[4][3] = {
-									{0x05, 0x05, 0x05},	//white
-									{0x05, 0x00, 0x00},	//red
-									{0x00, 0x05, 0x00},	//green
-									{0x00, 0x00, 0x05}	//blue
+									{0x09, 0x09, 0x09},	//white
+									{0x09, 0x00, 0x00},	//red
+									{0x00, 0x09, 0x00},	//green
+									{0x00, 0x00, 0x09}	//blue
 									};
 static uint32_t				hal_tick_temp;
-extern uint8_t 				WS2812_TC;					// led transmission flag
-extern uint16_t				adc_raw;
+
+
 
 /* global variables */
+extern uint8_t 				WS2812_TC;					// led transmission flag
 RTC_HandleTypeDef 			RTC_Handle;
 
 /**
@@ -83,936 +63,6 @@ RTC_HandleTypeDef 			RTC_Handle;
   * @retval None
   */
 void init_RTC( Alarmclock *alarmclock_param){
-	/* construct the numbers
-	 * 1 = set pixel
-	 * 0 = empty pixel
-	 */
-	/* number zero */
-	zero.number_construction[0][0] = 1;
-	zero.number_construction[1][0] = 1;
-	zero.number_construction[2][0] = 1;
-
-	zero.number_construction[0][1] = 1;
-	zero.number_construction[1][1] = 0;
-	zero.number_construction[2][1] = 1;
-
-	zero.number_construction[0][2] = 1;
-	zero.number_construction[1][2] = 0;
-	zero.number_construction[2][2] = 1;
-
-	zero.number_construction[0][3] = 1;
-	zero.number_construction[1][3] = 0;
-	zero.number_construction[2][3] = 1;
-
-	zero.number_construction[0][4] = 1;
-	zero.number_construction[1][4] = 0;
-	zero.number_construction[2][4] = 1;
-
-	zero.number_construction[0][5] = 1;
-	zero.number_construction[1][5] = 0;
-	zero.number_construction[2][5] = 1;
-
-	zero.number_construction[0][6] = 1;
-	zero.number_construction[1][6] = 1;
-	zero.number_construction[2][6] = 1;
-
-	/* number one */
-	one.number_construction[0][0] = 0;
-	one.number_construction[1][0] = 0;
-	one.number_construction[2][0] = 1;
-
-	one.number_construction[0][1] = 0;
-	one.number_construction[1][1] = 0;
-	one.number_construction[2][1] = 1;
-
-	one.number_construction[0][2] = 0;
-	one.number_construction[1][2] = 0;
-	one.number_construction[2][2] = 1;
-
-	one.number_construction[0][3] = 0;
-	one.number_construction[1][3] = 0;
-	one.number_construction[2][3] = 1;
-
-	one.number_construction[0][4] = 0;
-	one.number_construction[1][4] = 0;
-	one.number_construction[2][4] = 1;
-
-	one.number_construction[0][5] = 0;
-	one.number_construction[1][5] = 0;
-	one.number_construction[2][5] = 1;
-
-	one.number_construction[0][6] = 0;
-	one.number_construction[1][6] = 0;
-	one.number_construction[2][6] = 1;
-
-	/* number two */
-	two.number_construction[0][0] = 1;
-	two.number_construction[1][0] = 1;
-	two.number_construction[2][0] = 1;
-
-	two.number_construction[0][1] = 0;
-	two.number_construction[1][1] = 0;
-	two.number_construction[2][1] = 1;
-
-	two.number_construction[0][2] = 0;
-	two.number_construction[1][2] = 0;
-	two.number_construction[2][2] = 1;
-
-	two.number_construction[0][3] = 1;
-	two.number_construction[1][3] = 1;
-	two.number_construction[2][3] = 1;
-
-	two.number_construction[0][4] = 1;
-	two.number_construction[1][4] = 0;
-	two.number_construction[2][4] = 0;
-
-	two.number_construction[0][5] = 1;
-	two.number_construction[1][5] = 0;
-	two.number_construction[2][5] = 0;
-
-	two.number_construction[0][6] = 1;
-	two.number_construction[1][6] = 1;
-	two.number_construction[2][6] = 1;
-
-	/* number three */
-	three.number_construction[0][0] = 1;
-	three.number_construction[1][0] = 1;
-	three.number_construction[2][0] = 1;
-
-	three.number_construction[0][1] = 0;
-	three.number_construction[1][1] = 0;
-	three.number_construction[2][1] = 1;
-
-	three.number_construction[0][2] = 0;
-	three.number_construction[1][2] = 0;
-	three.number_construction[2][2] = 1;
-
-	three.number_construction[0][3] = 1;
-	three.number_construction[1][3] = 1;
-	three.number_construction[2][3] = 1;
-
-	three.number_construction[0][4] = 0;
-	three.number_construction[1][4] = 0;
-	three.number_construction[2][4] = 1;
-
-	three.number_construction[0][5] = 0;
-	three.number_construction[1][5] = 0;
-	three.number_construction[2][5] = 1;
-
-	three.number_construction[0][6] = 1;
-	three.number_construction[1][6] = 1;
-	three.number_construction[2][6] = 1;
-
-	/* number four */
-	four.number_construction[0][0] = 1;
-	four.number_construction[1][0] = 0;
-	four.number_construction[2][0] = 1;
-
-	four.number_construction[0][1] = 1;
-	four.number_construction[1][1] = 0;
-	four.number_construction[2][1] = 1;
-
-	four.number_construction[0][2] = 1;
-	four.number_construction[1][2] = 0;
-	four.number_construction[2][2] = 1;
-
-	four.number_construction[0][3] = 1;
-	four.number_construction[1][3] = 1;
-	four.number_construction[2][3] = 1;
-
-	four.number_construction[0][4] = 0;
-	four.number_construction[1][4] = 0;
-	four.number_construction[2][4] = 1;
-
-	four.number_construction[0][5] = 0;
-	four.number_construction[1][5] = 0;
-	four.number_construction[2][5] = 1;
-
-	four.number_construction[0][6] = 0;
-	four.number_construction[1][6] = 0;
-	four.number_construction[2][6] = 1;
-
-	/* number five */
-	five.number_construction[0][0] = 1;
-	five.number_construction[1][0] = 1;
-	five.number_construction[2][0] = 1;
-
-	five.number_construction[0][1] = 1;
-	five.number_construction[1][1] = 0;
-	five.number_construction[2][1] = 0;
-
-	five.number_construction[0][2] = 1;
-	five.number_construction[1][2] = 0;
-	five.number_construction[2][2] = 0;
-
-	five.number_construction[0][3] = 1;
-	five.number_construction[1][3] = 1;
-	five.number_construction[2][3] = 1;
-
-	five.number_construction[0][4] = 0;
-	five.number_construction[1][4] = 0;
-	five.number_construction[2][4] = 1;
-
-	five.number_construction[0][5] = 0;
-	five.number_construction[1][5] = 0;
-	five.number_construction[2][5] = 1;
-
-	five.number_construction[0][6] = 1;
-	five.number_construction[1][6] = 1;
-	five.number_construction[2][6] = 1;
-
-	/* number six */
-	six.number_construction[0][0] = 1;
-	six.number_construction[1][0] = 1;
-	six.number_construction[2][0] = 1;
-
-	six.number_construction[0][1] = 1;
-	six.number_construction[1][1] = 0;
-	six.number_construction[2][1] = 0;
-
-	six.number_construction[0][2] = 1;
-	six.number_construction[1][2] = 0;
-	six.number_construction[2][2] = 0;
-
-	six.number_construction[0][3] = 1;
-	six.number_construction[1][3] = 1;
-	six.number_construction[2][3] = 1;
-
-	six.number_construction[0][4] = 1;
-	six.number_construction[1][4] = 0;
-	six.number_construction[2][4] = 1;
-
-	six.number_construction[0][5] = 1;
-	six.number_construction[1][5] = 0;
-	six.number_construction[2][5] = 1;
-
-	six.number_construction[0][6] = 1;
-	six.number_construction[1][6] = 1;
-	six.number_construction[2][6] = 1;
-
-	/* number seven */
-	seven.number_construction[0][0] = 1;
-	seven.number_construction[1][0] = 1;
-	seven.number_construction[2][0] = 1;
-
-	seven.number_construction[0][1] = 0;
-	seven.number_construction[1][1] = 0;
-	seven.number_construction[2][1] = 1;
-
-	seven.number_construction[0][2] = 0;
-	seven.number_construction[1][2] = 0;
-	seven.number_construction[2][2] = 1;
-
-	seven.number_construction[0][3] = 0;
-	seven.number_construction[1][3] = 0;
-	seven.number_construction[2][3] = 1;
-
-	seven.number_construction[0][4] = 0;
-	seven.number_construction[1][4] = 0;
-	seven.number_construction[2][4] = 1;
-
-	seven.number_construction[0][5] = 0;
-	seven.number_construction[1][5] = 0;
-	seven.number_construction[2][5] = 1;
-
-	seven.number_construction[0][6] = 0;
-	seven.number_construction[1][6] = 0;
-	seven.number_construction[2][6] = 1;
-
-	/* number eight */
-	eight.number_construction[0][0] = 1;
-	eight.number_construction[1][0] = 1;
-	eight.number_construction[2][0] = 1;
-
-	eight.number_construction[0][1] = 1;
-	eight.number_construction[1][1] = 0;
-	eight.number_construction[2][1] = 1;
-
-	eight.number_construction[0][2] = 1;
-	eight.number_construction[1][2] = 0;
-	eight.number_construction[2][2] = 1;
-
-	eight.number_construction[0][3] = 1;
-	eight.number_construction[1][3] = 1;
-	eight.number_construction[2][3] = 1;
-
-	eight.number_construction[0][4] = 1;
-	eight.number_construction[1][4] = 0;
-	eight.number_construction[2][4] = 1;
-
-	eight.number_construction[0][5] = 1;
-	eight.number_construction[1][5] = 0;
-	eight.number_construction[2][5] = 1;
-
-	eight.number_construction[0][6] = 1;
-	eight.number_construction[1][6] = 1;
-	eight.number_construction[2][6] = 1;
-
-	/* number nine */
-	nine.number_construction[0][0] = 1;
-	nine.number_construction[1][0] = 1;
-	nine.number_construction[2][0] = 1;
-
-	nine.number_construction[0][1] = 1;
-	nine.number_construction[1][1] = 0;
-	nine.number_construction[2][1] = 1;
-
-	nine.number_construction[0][2] = 1;
-	nine.number_construction[1][2] = 0;
-	nine.number_construction[2][2] = 1;
-
-	nine.number_construction[0][3] = 1;
-	nine.number_construction[1][3] = 1;
-	nine.number_construction[2][3] = 1;
-
-	nine.number_construction[0][4] = 0;
-	nine.number_construction[1][4] = 0;
-	nine.number_construction[2][4] = 1;
-
-	nine.number_construction[0][5] = 0;
-	nine.number_construction[1][5] = 0;
-	nine.number_construction[2][5] = 1;
-
-	nine.number_construction[0][6] = 1;
-	nine.number_construction[1][6] = 1;
-	nine.number_construction[2][6] = 1;
-
-	/* doublepoint */
-	doublepoint.number_construction[0][0] = 0;
-	doublepoint.number_construction[1][0] = 0;
-	doublepoint.number_construction[2][0] = 0;
-
-	doublepoint.number_construction[0][1] = 0;
-	doublepoint.number_construction[1][1] = 0;
-	doublepoint.number_construction[2][1] = 0;
-
-	doublepoint.number_construction[0][2] = 0;
-	doublepoint.number_construction[1][2] = 1;
-	doublepoint.number_construction[2][2] = 0;
-
-	doublepoint.number_construction[0][3] = 0;
-	doublepoint.number_construction[1][3] = 0;
-	doublepoint.number_construction[2][3] = 0;
-
-	doublepoint.number_construction[0][4] = 0;
-	doublepoint.number_construction[1][4] = 1;
-	doublepoint.number_construction[2][4] = 0;
-
-	doublepoint.number_construction[0][5] = 0;
-	doublepoint.number_construction[1][5] = 0;
-	doublepoint.number_construction[2][5] = 0;
-
-	doublepoint.number_construction[0][6] = 0;
-	doublepoint.number_construction[1][6] = 0;
-	doublepoint.number_construction[2][6] = 0;
-
-	/* construct the letters
-	 * 1 = set pixel
-	 * 0 = empty pixel
-	 */
-	/* letter A */
-	a.letter_construction[0][0] = 0;
-	a.letter_construction[1][0] = 0;
-	a.letter_construction[2][0] = 0;
-	a.letter_construction[3][0] = 0;
-	a.letter_construction[4][0] = 0;
-
-	a.letter_construction[0][1] = 0;
-	a.letter_construction[1][1] = 0;
-	a.letter_construction[2][1] = 1;
-	a.letter_construction[3][1] = 0;
-	a.letter_construction[4][1] = 0;
-
-	a.letter_construction[0][2] = 0;
-	a.letter_construction[1][2] = 1;
-	a.letter_construction[2][2] = 0;
-	a.letter_construction[3][2] = 1;
-	a.letter_construction[4][2] = 0;
-
-	a.letter_construction[0][3] = 0;
-	a.letter_construction[1][3] = 1;
-	a.letter_construction[2][3] = 1;
-	a.letter_construction[3][3] = 1;
-	a.letter_construction[4][3] = 0;
-
-	a.letter_construction[0][4] = 0;
-	a.letter_construction[1][4] = 1;
-	a.letter_construction[2][4] = 0;
-	a.letter_construction[3][4] = 1;
-	a.letter_construction[4][4] = 0;
-
-	a.letter_construction[0][5] = 0;
-	a.letter_construction[1][5] = 1;
-	a.letter_construction[2][5] = 0;
-	a.letter_construction[3][5] = 1;
-	a.letter_construction[4][5] = 0;
-
-	a.letter_construction[0][6] = 0;
-	a.letter_construction[1][6] = 0;
-	a.letter_construction[2][6] = 0;
-	a.letter_construction[3][6] = 0;
-	a.letter_construction[4][6] = 0;
-
-	/* letter E */
-	e.letter_construction[0][0] = 0;
-	e.letter_construction[1][0] = 0;
-	e.letter_construction[2][0] = 0;
-	e.letter_construction[3][0] = 0;
-	e.letter_construction[4][0] = 0;
-
-	e.letter_construction[0][1] = 0;
-	e.letter_construction[1][1] = 1;
-	e.letter_construction[2][1] = 1;
-	e.letter_construction[3][1] = 1;
-	e.letter_construction[4][1] = 0;
-
-	e.letter_construction[0][2] = 0;
-	e.letter_construction[1][2] = 1;
-	e.letter_construction[2][2] = 0;
-	e.letter_construction[3][2] = 0;
-	e.letter_construction[4][2] = 0;
-
-	e.letter_construction[0][3] = 0;
-	e.letter_construction[1][3] = 1;
-	e.letter_construction[2][3] = 1;
-	e.letter_construction[3][3] = 0;
-	e.letter_construction[4][3] = 0;
-
-	e.letter_construction[0][4] = 0;
-	e.letter_construction[1][4] = 1;
-	e.letter_construction[2][4] = 0;
-	e.letter_construction[3][4] = 0;
-	e.letter_construction[4][4] = 0;
-
-	e.letter_construction[0][5] = 0;
-	e.letter_construction[1][5] = 1;
-	e.letter_construction[2][5] = 1;
-	e.letter_construction[3][5] = 1;
-	e.letter_construction[4][5] = 0;
-
-	e.letter_construction[0][6] = 0;
-	e.letter_construction[1][6] = 0;
-	e.letter_construction[2][6] = 0;
-	e.letter_construction[3][6] = 0;
-	e.letter_construction[4][6] = 0;
-
-	/* letter I */
-	i.letter_construction[0][0] = 0;
-	i.letter_construction[1][0] = 0;
-	i.letter_construction[2][0] = 0;
-	i.letter_construction[3][0] = 0;
-	i.letter_construction[4][0] = 0;
-
-	i.letter_construction[0][1] = 0;
-	i.letter_construction[1][1] = 1;
-	i.letter_construction[2][1] = 1;
-	i.letter_construction[3][1] = 1;
-	i.letter_construction[4][1] = 0;
-
-	i.letter_construction[0][2] = 0;
-	i.letter_construction[1][2] = 0;
-	i.letter_construction[2][2] = 1;
-	i.letter_construction[3][2] = 0;
-	i.letter_construction[4][2] = 0;
-
-	i.letter_construction[0][3] = 0;
-	i.letter_construction[1][3] = 0;
-	i.letter_construction[2][3] = 1;
-	i.letter_construction[3][3] = 0;
-	i.letter_construction[4][3] = 0;
-
-	i.letter_construction[0][4] = 0;
-	i.letter_construction[1][4] = 0;
-	i.letter_construction[2][4] = 1;
-	i.letter_construction[3][4] = 0;
-	i.letter_construction[4][4] = 0;
-
-	i.letter_construction[0][5] = 0;
-	i.letter_construction[1][5] = 1;
-	i.letter_construction[2][5] = 1;
-	i.letter_construction[3][5] = 1;
-	i.letter_construction[4][5] = 0;
-
-	i.letter_construction[0][6] = 0;
-	i.letter_construction[1][6] = 0;
-	i.letter_construction[2][6] = 0;
-	i.letter_construction[3][6] = 0;
-	i.letter_construction[4][6] = 0;
-
-	/* letter L */
-	l.letter_construction[0][0] = 0;
-	l.letter_construction[1][0] = 0;
-	l.letter_construction[2][0] = 0;
-	l.letter_construction[3][0] = 0;
-	l.letter_construction[4][0] = 0;
-
-	l.letter_construction[0][1] = 0;
-	l.letter_construction[1][1] = 1;
-	l.letter_construction[2][1] = 0;
-	l.letter_construction[3][1] = 0;
-	l.letter_construction[4][1] = 0;
-
-	l.letter_construction[0][2] = 0;
-	l.letter_construction[1][2] = 1;
-	l.letter_construction[2][2] = 0;
-	l.letter_construction[3][2] = 0;
-	l.letter_construction[4][2] = 0;
-
-	l.letter_construction[0][3] = 0;
-	l.letter_construction[1][3] = 1;
-	l.letter_construction[2][3] = 0;
-	l.letter_construction[3][3] = 0;
-	l.letter_construction[4][3] = 0;
-
-	l.letter_construction[0][4] = 0;
-	l.letter_construction[1][4] = 1;
-	l.letter_construction[2][4] = 0;
-	l.letter_construction[3][4] = 0;
-	l.letter_construction[4][4] = 0;
-
-	l.letter_construction[0][5] = 0;
-	l.letter_construction[1][5] = 1;
-	l.letter_construction[2][5] = 1;
-	l.letter_construction[3][5] = 1;
-	l.letter_construction[4][5] = 0;
-
-	l.letter_construction[0][6] = 0;
-	l.letter_construction[1][6] = 0;
-	l.letter_construction[2][6] = 0;
-	l.letter_construction[3][6] = 0;
-	l.letter_construction[4][6] = 0;
-
-	/* letter R */
-	r.letter_construction[0][0] = 0;
-	r.letter_construction[1][0] = 0;
-	r.letter_construction[2][0] = 0;
-	r.letter_construction[3][0] = 0;
-	r.letter_construction[4][0] = 0;
-
-	r.letter_construction[0][1] = 0;
-	r.letter_construction[1][1] = 1;
-	r.letter_construction[2][1] = 1;
-	r.letter_construction[3][1] = 0;
-	r.letter_construction[4][1] = 0;
-
-	r.letter_construction[0][2] = 0;
-	r.letter_construction[1][2] = 1;
-	r.letter_construction[2][2] = 0;
-	r.letter_construction[3][2] = 1;
-	r.letter_construction[4][2] = 0;
-
-	r.letter_construction[0][3] = 0;
-	r.letter_construction[1][3] = 1;
-	r.letter_construction[2][3] = 1;
-	r.letter_construction[3][3] = 0;
-	r.letter_construction[4][3] = 0;
-
-	r.letter_construction[0][4] = 0;
-	r.letter_construction[1][4] = 1;
-	r.letter_construction[2][4] = 0;
-	r.letter_construction[3][4] = 1;
-	r.letter_construction[4][4] = 0;
-
-	r.letter_construction[0][5] = 0;
-	r.letter_construction[1][5] = 1;
-	r.letter_construction[2][5] = 0;
-	r.letter_construction[3][5] = 1;
-	r.letter_construction[4][5] = 0;
-
-	r.letter_construction[0][6] = 0;
-	r.letter_construction[1][6] = 0;
-	r.letter_construction[2][6] = 0;
-	r.letter_construction[3][6] = 0;
-	r.letter_construction[4][6] = 0;
-
-	/* letter S */
-	s.letter_construction[0][0] = 0;
-	s.letter_construction[1][0] = 0;
-	s.letter_construction[2][0] = 0;
-	s.letter_construction[3][0] = 0;
-	s.letter_construction[4][0] = 0;
-
-	s.letter_construction[0][1] = 0;
-	s.letter_construction[1][1] = 0;
-	s.letter_construction[2][1] = 1;
-	s.letter_construction[3][1] = 1;
-	s.letter_construction[4][1] = 0;
-
-	s.letter_construction[0][2] = 0;
-	s.letter_construction[1][2] = 1;
-	s.letter_construction[2][2] = 0;
-	s.letter_construction[3][2] = 0;
-	s.letter_construction[4][2] = 0;
-
-	s.letter_construction[0][3] = 0;
-	s.letter_construction[1][3] = 0;
-	s.letter_construction[2][3] = 1;
-	s.letter_construction[3][3] = 0;
-	s.letter_construction[4][3] = 0;
-
-	s.letter_construction[0][4] = 0;
-	s.letter_construction[1][4] = 0;
-	s.letter_construction[2][4] = 0;
-	s.letter_construction[3][4] = 1;
-	s.letter_construction[4][4] = 0;
-
-	s.letter_construction[0][5] = 0;
-	s.letter_construction[1][5] = 1;
-	s.letter_construction[2][5] = 1;
-	s.letter_construction[3][5] = 0;
-	s.letter_construction[4][5] = 0;
-
-	s.letter_construction[0][6] = 0;
-	s.letter_construction[1][6] = 0;
-	s.letter_construction[2][6] = 0;
-	s.letter_construction[3][6] = 0;
-	s.letter_construction[4][6] = 0;
-
-	/* letter T */
-	t.letter_construction[0][0] = 0;
-	t.letter_construction[1][0] = 0;
-	t.letter_construction[2][0] = 0;
-	t.letter_construction[3][0] = 0;
-	t.letter_construction[4][0] = 0;
-
-	t.letter_construction[0][1] = 0;
-	t.letter_construction[1][1] = 1;
-	t.letter_construction[2][1] = 1;
-	t.letter_construction[3][1] = 1;
-	t.letter_construction[4][1] = 0;
-
-	t.letter_construction[0][2] = 0;
-	t.letter_construction[1][2] = 0;
-	t.letter_construction[2][2] = 1;
-	t.letter_construction[3][2] = 0;
-	t.letter_construction[4][2] = 0;
-
-	t.letter_construction[0][3] = 0;
-	t.letter_construction[1][3] = 0;
-	t.letter_construction[2][3] = 1;
-	t.letter_construction[3][3] = 0;
-	t.letter_construction[4][3] = 0;
-
-	t.letter_construction[0][4] = 0;
-	t.letter_construction[1][4] = 0;
-	t.letter_construction[2][4] = 1;
-	t.letter_construction[3][4] = 0;
-	t.letter_construction[4][4] = 0;
-
-	t.letter_construction[0][5] = 0;
-	t.letter_construction[1][5] = 0;
-	t.letter_construction[2][5] = 1;
-	t.letter_construction[3][5] = 0;
-	t.letter_construction[4][5] = 0;
-
-	t.letter_construction[0][6] = 0;
-	t.letter_construction[1][6] = 0;
-	t.letter_construction[2][6] = 0;
-	t.letter_construction[3][6] = 0;
-	t.letter_construction[4][6] = 0;
-
-	/* letter U */
-	u.letter_construction[0][0] = 0;
-	u.letter_construction[1][0] = 0;
-	u.letter_construction[2][0] = 0;
-	u.letter_construction[3][0] = 0;
-	u.letter_construction[4][0] = 0;
-
-	u.letter_construction[0][1] = 0;
-	u.letter_construction[1][1] = 1;
-	u.letter_construction[2][1] = 0;
-	u.letter_construction[3][1] = 1;
-	u.letter_construction[4][1] = 0;
-
-	u.letter_construction[0][2] = 0;
-	u.letter_construction[1][2] = 1;
-	u.letter_construction[2][2] = 0;
-	u.letter_construction[3][2] = 1;
-	u.letter_construction[4][2] = 0;
-
-	u.letter_construction[0][3] = 0;
-	u.letter_construction[1][3] = 1;
-	u.letter_construction[2][3] = 0;
-	u.letter_construction[3][3] = 1;
-	u.letter_construction[4][3] = 0;
-
-	u.letter_construction[0][4] = 0;
-	u.letter_construction[1][4] = 1;
-	u.letter_construction[2][4] = 0;
-	u.letter_construction[3][4] = 1;
-	u.letter_construction[4][4] = 0;
-
-	u.letter_construction[0][5] = 0;
-	u.letter_construction[1][5] = 0;
-	u.letter_construction[2][5] = 1;
-	u.letter_construction[3][5] = 1;
-	u.letter_construction[4][5] = 0;
-
-	u.letter_construction[0][6] = 0;
-	u.letter_construction[1][6] = 0;
-	u.letter_construction[2][6] = 0;
-	u.letter_construction[3][6] = 0;
-	u.letter_construction[4][6] = 0;
-
-	/* letter P */
-	p.letter_construction[0][0] = 0;
-	p.letter_construction[1][0] = 0;
-	p.letter_construction[2][0] = 0;
-	p.letter_construction[3][0] = 0;
-	p.letter_construction[4][0] = 0;
-
-	p.letter_construction[0][1] = 0;
-	p.letter_construction[1][1] = 1;
-	p.letter_construction[2][1] = 1;
-	p.letter_construction[3][1] = 0;
-	p.letter_construction[4][1] = 0;
-
-	p.letter_construction[0][2] = 0;
-	p.letter_construction[1][2] = 1;
-	p.letter_construction[2][2] = 0;
-	p.letter_construction[3][2] = 1;
-	p.letter_construction[4][2] = 0;
-
-	p.letter_construction[0][3] = 0;
-	p.letter_construction[1][3] = 1;
-	p.letter_construction[2][3] = 1;
-	p.letter_construction[3][3] = 0;
-	p.letter_construction[4][3] = 0;
-
-	p.letter_construction[0][4] = 0;
-	p.letter_construction[1][4] = 1;
-	p.letter_construction[2][4] = 0;
-	p.letter_construction[3][4] = 0;
-	p.letter_construction[4][4] = 0;
-
-	p.letter_construction[0][5] = 0;
-	p.letter_construction[1][5] = 1;
-	p.letter_construction[2][5] = 0;
-	p.letter_construction[3][5] = 0;
-	p.letter_construction[4][5] = 0;
-
-	p.letter_construction[0][6] = 0;
-	p.letter_construction[1][6] = 0;
-	p.letter_construction[2][6] = 0;
-	p.letter_construction[3][6] = 0;
-	p.letter_construction[4][6] = 0;
-
-	/* letter C */
-	c.letter_construction[0][0] = 0;
-	c.letter_construction[1][0] = 0;
-	c.letter_construction[2][0] = 0;
-	c.letter_construction[3][0] = 0;
-	c.letter_construction[4][0] = 0;
-
-	c.letter_construction[0][1] = 0;
-	c.letter_construction[1][1] = 0;
-	c.letter_construction[2][1] = 1;
-	c.letter_construction[3][1] = 1;
-	c.letter_construction[4][1] = 0;
-
-	c.letter_construction[0][2] = 0;
-	c.letter_construction[1][2] = 1;
-	c.letter_construction[2][2] = 0;
-	c.letter_construction[3][2] = 0;
-	c.letter_construction[4][2] = 0;
-
-	c.letter_construction[0][3] = 0;
-	c.letter_construction[1][3] = 1;
-	c.letter_construction[2][3] = 0;
-	c.letter_construction[3][3] = 0;
-	c.letter_construction[4][3] = 0;
-
-	c.letter_construction[0][4] = 0;
-	c.letter_construction[1][4] = 1;
-	c.letter_construction[2][4] = 0;
-	c.letter_construction[3][4] = 0;
-	c.letter_construction[4][4] = 0;
-
-	c.letter_construction[0][5] = 0;
-	c.letter_construction[1][5] = 0;
-	c.letter_construction[2][5] = 1;
-	c.letter_construction[3][5] = 1;
-	c.letter_construction[4][5] = 0;
-
-	c.letter_construction[0][6] = 0;
-	c.letter_construction[1][6] = 0;
-	c.letter_construction[2][6] = 0;
-	c.letter_construction[3][6] = 0;
-	c.letter_construction[4][6] = 0;
-
-
-	/* letter O */
-	o.letter_construction[0][0] = 0;
-	o.letter_construction[1][0] = 0;
-	o.letter_construction[2][0] = 0;
-	o.letter_construction[3][0] = 0;
-	o.letter_construction[4][0] = 0;
-
-	o.letter_construction[0][1] = 0;
-	o.letter_construction[1][1] = 0;
-	o.letter_construction[2][1] = 1;
-	o.letter_construction[3][1] = 0;
-	o.letter_construction[4][1] = 0;
-
-	o.letter_construction[0][2] = 0;
-	o.letter_construction[1][2] = 1;
-	o.letter_construction[2][2] = 0;
-	o.letter_construction[3][2] = 1;
-	o.letter_construction[4][2] = 0;
-
-	o.letter_construction[0][3] = 0;
-	o.letter_construction[1][3] = 1;
-	o.letter_construction[2][3] = 0;
-	o.letter_construction[3][3] = 1;
-	o.letter_construction[4][3] = 0;
-
-	o.letter_construction[0][4] = 0;
-	o.letter_construction[1][4] = 1;
-	o.letter_construction[2][4] = 0;
-	o.letter_construction[3][4] = 1;
-	o.letter_construction[4][4] = 0;
-
-	o.letter_construction[0][5] = 0;
-	o.letter_construction[1][5] = 0;
-	o.letter_construction[2][5] = 1;
-	o.letter_construction[3][5] = 1;
-	o.letter_construction[4][5] = 0;
-
-	o.letter_construction[0][6] = 0;
-	o.letter_construction[1][6] = 0;
-	o.letter_construction[2][6] = 0;
-	o.letter_construction[3][6] = 0;
-	o.letter_construction[4][6] = 0;
-
-	/* letter K */
-	k.letter_construction[0][0] = 0;
-	k.letter_construction[1][0] = 0;
-	k.letter_construction[2][0] = 0;
-	k.letter_construction[3][0] = 0;
-	k.letter_construction[4][0] = 0;
-
-	k.letter_construction[0][1] = 0;
-	k.letter_construction[1][1] = 1;
-	k.letter_construction[2][1] = 0;
-	k.letter_construction[3][1] = 1;
-	k.letter_construction[4][1] = 0;
-
-	k.letter_construction[0][2] = 0;
-	k.letter_construction[1][2] = 1;
-	k.letter_construction[2][2] = 0;
-	k.letter_construction[3][2] = 1;
-	k.letter_construction[4][2] = 0;
-
-	k.letter_construction[0][3] = 0;
-	k.letter_construction[1][3] = 1;
-	k.letter_construction[2][3] = 1;
-	k.letter_construction[3][3] = 0;
-	k.letter_construction[4][3] = 0;
-
-	k.letter_construction[0][4] = 0;
-	k.letter_construction[1][4] = 1;
-	k.letter_construction[2][4] = 0;
-	k.letter_construction[3][4] = 1;
-	k.letter_construction[4][4] = 0;
-
-	k.letter_construction[0][5] = 0;
-	k.letter_construction[1][5] = 1;
-	k.letter_construction[2][5] = 0;
-	k.letter_construction[3][5] = 1;
-	k.letter_construction[4][5] = 0;
-
-	k.letter_construction[0][6] = 0;
-	k.letter_construction[1][6] = 0;
-	k.letter_construction[2][6] = 0;
-	k.letter_construction[3][6] = 0;
-	k.letter_construction[4][6] = 0;
-
-	/* letter M */
-	m.letter_construction[0][0] = 0;
-	m.letter_construction[1][0] = 0;
-	m.letter_construction[2][0] = 0;
-	m.letter_construction[3][0] = 0;
-	m.letter_construction[4][0] = 0;
-
-	m.letter_construction[0][1] = 1;
-	m.letter_construction[1][1] = 1;
-	m.letter_construction[2][1] = 0;
-	m.letter_construction[3][1] = 1;
-	m.letter_construction[4][1] = 0;
-
-	m.letter_construction[0][2] = 1;
-	m.letter_construction[1][2] = 0;
-	m.letter_construction[2][2] = 1;
-	m.letter_construction[3][2] = 0;
-	m.letter_construction[4][2] = 1;
-
-	m.letter_construction[0][3] = 1;
-	m.letter_construction[1][3] = 0;
-	m.letter_construction[2][3] = 1;
-	m.letter_construction[3][3] = 0;
-	m.letter_construction[4][3] = 1;
-
-	m.letter_construction[0][4] = 1;
-	m.letter_construction[1][4] = 0;
-	m.letter_construction[2][4] = 1;
-	m.letter_construction[3][4] = 0;
-	m.letter_construction[4][4] = 1;
-
-	m.letter_construction[0][5] = 1;
-	m.letter_construction[1][5] = 0;
-	m.letter_construction[2][5] = 1;
-	m.letter_construction[3][5] = 0;
-	m.letter_construction[4][5] = 1;
-
-	m.letter_construction[0][6] = 0;
-	m.letter_construction[1][6] = 0;
-	m.letter_construction[2][6] = 0;
-	m.letter_construction[3][6] = 0;
-	m.letter_construction[4][6] = 0;
-
-	/* letter W */
-	m.letter_construction[0][0] = 0;
-	m.letter_construction[1][0] = 0;
-	m.letter_construction[2][0] = 0;
-	m.letter_construction[3][0] = 0;
-	m.letter_construction[4][0] = 0;
-
-	w.letter_construction[0][1] = 1;
-	w.letter_construction[1][1] = 0;
-	w.letter_construction[2][1] = 1;
-	w.letter_construction[3][1] = 0;
-	w.letter_construction[4][1] = 1;
-
-	w.letter_construction[0][2] = 1;
-	w.letter_construction[1][2] = 0;
-	w.letter_construction[2][2] = 1;
-	w.letter_construction[3][2] = 0;
-	w.letter_construction[4][2] = 1;
-
-	w.letter_construction[0][3] = 1;
-	w.letter_construction[1][3] = 0;
-	w.letter_construction[2][3] = 1;
-	w.letter_construction[3][3] = 0;
-	w.letter_construction[4][3] = 1;
-
-	w.letter_construction[0][4] = 1;
-	w.letter_construction[1][4] = 0;
-	w.letter_construction[2][4] = 1;
-	w.letter_construction[3][4] = 0;
-	w.letter_construction[4][4] = 1;
-
-	w.letter_construction[0][5] = 0;
-	w.letter_construction[1][5] = 1;
-	w.letter_construction[2][5] = 0;
-	w.letter_construction[3][5] = 1;
-	w.letter_construction[4][5] = 0;
-
-	w.letter_construction[0][6] = 0;
-	w.letter_construction[1][6] = 0;
-	w.letter_construction[2][6] = 0;
-	w.letter_construction[3][6] = 0;
-	w.letter_construction[4][6] = 0;
-
 	/* Configure RTC prescaler and RTC data registers */
 	/* RTC configured as follow:
 	- Asynch Prediv  = Calculated automatically by HAL */
@@ -1038,110 +88,144 @@ void init_RTC( Alarmclock *alarmclock_param){
 	h1_time_change_flag = 0;
 	m0_time_change_flag = 0;
 	m1_time_change_flag = 0;
+
 	/* initiation flag for clock number startup effect */
 	init = 1;
+
+	/* set mode count for mode increment function */
+	mode_count = 6;
+	#ifdef DEV_MODE
+	mode_count = 7;
+	#endif
+
 }
 
 /**
-  * @brief  draws a a number into the IO buffer
+  * @brief  shows alarmclock intro during startup
   * @note   None
   * @retval None
   */
-void draw_number(Number number, int16_t x_offset, int8_t y_offset, uint8_t *red, uint8_t *green, uint8_t *blue, uint16_t *ambient_factor){
-	for(int16_t x = 0; x < 3; x++){
-		for(int8_t y = 0; y < 7; y++){
-			if(number.number_construction[x][y] != 0 && (y_offset+y >= 0) && (y_offset+y < ROW) && (x_offset+x >= 0) && (x_offset+x < COL)){
-				WS2812_framedata_setPixel((uint8_t)y_offset + (uint8_t)y, (uint16_t)x_offset + (uint16_t)x, (uint8_t)*red*(uint8_t)*ambient_factor, (uint8_t)*green*(uint8_t)*ambient_factor, (uint8_t)*blue*(uint8_t)*ambient_factor);
+void clock_intro(){
+	uint8_t redtest = 0xff;
+	uint8_t greentest = 0x00;
+	uint8_t bluetest = 0x00;
+	int8_t running_text_offset = -30;
+	uint16_t ambient = 10;
+	uint8_t	clock_background_framebuffer[ROW*COL*3];	//7 rows * 17 cols * 3 (RGB) = 363 --- separate frame buffer for background fx --- 1 array entry contents a color component information in 8 bit. 3 entries together = 1 RGB Information
+	/* disable button irq */
+	set_button_irq(DISABLE);
+	for(uint16_t i = 0; i<440; i++){
+		while(!WS2812_TC);
+		/* fill the complete buffer at first round */
+		if(i == 0){
+			for(uint8_t y = 0; y<ROW; y++){
+				/* set the color with the color wheel function */
+				for(uint8_t s=0; s<20; s++){
+					WS2812_color_wheel_plus(&redtest, &greentest, &bluetest);
+				}
+				for(uint16_t x = 0; x<COL; x++){
+					/* fill buffer for first frame */
+					clock_background_framebuffer[(y*COL*3)+(x*3)] = redtest;
+					clock_background_framebuffer[(y*COL*3)+(x*3)+1] = greentest;
+					clock_background_framebuffer[(y*COL*3)+(x*3)+2] = bluetest;
+				}
+			}
+		}else{
+			/* set the color with the color wheel function */
+			for(uint8_t s=0; s<15; s++){
+				WS2812_color_wheel_plus(&redtest, &greentest, &bluetest);
+			}
+			/* shift 1 row up */
+			for(uint16_t j=0; j<ROW-1; j++){
+				for(uint16_t s=0; s<3*COL; s++){
+					clock_background_framebuffer[j*COL*3+s] = clock_background_framebuffer[(j+1)*COL*3+s];
+				}
+			}
+			/* write new color in bottom row */
+			for(uint16_t j=0; j<COL; j++){
+				clock_background_framebuffer[((ROW-1)*COL*3)+(j*3)] = redtest;
+				clock_background_framebuffer[((ROW-1)*COL*3)+(j*3)+1] = greentest;
+				clock_background_framebuffer[((ROW-1)*COL*3)+(j*3)+2] = bluetest;
 			}
 		}
+		/* write buffer into buffer... lol */
+		for(uint8_t y = 0; y<ROW; y++){
+			for(uint16_t x = 0; x<COL; x++){
+				WS2812_framedata_setPixel(y, x, (uint8_t)clock_background_framebuffer[(y*COL*3)+(x*3)], (uint8_t)clock_background_framebuffer[(y*COL*3)+(x*3)+1], (uint8_t)clock_background_framebuffer[(y*COL*3)+(x*3)+2]);
+			}
+		}
+
+		/* write text */
+		draw_letter('p', -1-running_text_offset, 0, 0x00, 0x00, 0x00, &ambient);
+		draw_letter('i', 3-running_text_offset, 0, 0x00, 0x00, 0x00, &ambient);
+		draw_letter('x', 7-running_text_offset, 0, 0x00, 0x00, 0x00, &ambient);
+		draw_letter('e', 11-running_text_offset, 0, 0x00, 0x00, 0x00, &ambient);
+		draw_letter('l', 15-running_text_offset, 0, 0x00, 0x00, 0x00, &ambient);
+
+		draw_letter('c', 22-running_text_offset, 0, 0x00, 0x00, 0x00, &ambient);
+		draw_letter('l', 26-running_text_offset, 0, 0x00, 0x00, 0x00, &ambient);
+		draw_letter('o', 30-running_text_offset, 0, 0x00, 0x00, 0x00, &ambient);
+		draw_letter('c', 34-running_text_offset, 0, 0x00, 0x00, 0x00, &ambient);
+		draw_letter('k', 38-running_text_offset, 0, 0x00, 0x00, 0x00, &ambient);
+
+		/* refresh letter positions to create a running text */
+		if(i%5 == 0){
+			running_text_offset++;
+		}
+
+		sendbuf_WS2812();
+		HAL_Delay(5);
 	}
+	/* enable button irq */
+	set_button_irq(ENABLE);
 }
 
 /**
-  * @brief  draws a a letter into the IO buffer
-  * @note   None
-  * @retval None
-  */
-void draw_letter(Letter letter, int16_t x_offset, int8_t y_offset, uint8_t *red, uint8_t *green, uint8_t *blue, uint16_t *ambient_factor){
-	for(int16_t x = 0; x < 5; x++){
-		for(int8_t y = 0; y < 7; y++){
-			if(letter.letter_construction[x][y] != 0 && (y_offset+y >= 0) && (y_offset+y < ROW) && (x_offset+x >= 0) && (x_offset+x < COL)){
-				WS2812_framedata_setPixel((uint8_t)y_offset + (uint8_t)y, (uint16_t)x_offset + (uint16_t)x, (uint8_t)*red*(uint8_t)*ambient_factor, (uint8_t)*green*(uint8_t)*ambient_factor, (uint8_t)*blue*(uint8_t)*ambient_factor);
-			}
-		}
-	}
-}
-
-/**
-  * @brief  draws mode as letters
+  * @brief  shows the mode on the display
   * @note   None
   * @retval None
   */
 void draw_mode(Alarmclock *alarmclock_param){
 	switch(alarmclock_param->mode){
 		case MODE_TIME_SET_CLOCK_h:
-									/* ignore isr */
-									isr_disable();
-									for(int16_t index = 0; index>-24; index--){
-										/* erase frame buffer */
-										WS2812_clear_buffer();
-										/* write letters into buffer */
-										draw_letter(t, index+0, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
-										draw_letter(i, index+4, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
-										draw_letter(m, index+9, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
-										draw_letter(e, index+14, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
-										draw_letter(s, index+20, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
-										draw_letter(e, index+24, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
-										draw_letter(t, index+28, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
-										draw_letter(u, index+32, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
-										draw_letter(p, index+36, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
-										/* wait for the data transmission to the led's to be ready */
-										while(!WS2812_TC);
-										/* send frame buffer to the leds */
-										sendbuf_WS2812();
-										/* roll through the text with XX ms period */
-										if(index == 0){
-											HAL_Delay(500);
-										}else{
-											HAL_Delay(100);
-										}
-									}
-									/* wait a bit to show the letters */
-
-									HAL_Delay(500);
-									isr_enable();
+									/* disable button irq */
+									set_button_irq(DISABLE);
+									/* write time setup on the display */
+									draw_string("time setup", 0, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+									/* enable button irq */
+									set_button_irq(ENABLE);
 		break;
 		case MODE_TIME_SET_ALARM_h:
-									/* ignore isr */
-									isr_disable();
-									for(int16_t index = 0; index>-28; index--){
-										/* erase frame buffer */
-										WS2812_clear_buffer();
-										/* write letters into buffer */
-										draw_letter(a, index+0, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
-										draw_letter(l, index+4, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
-										draw_letter(a, index+8, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
-										draw_letter(r, index+12, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
-										draw_letter(m, index+17, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
-										draw_letter(s, index+24, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
-										draw_letter(e, index+28, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
-										draw_letter(t, index+32, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
-										draw_letter(u, index+36, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
-										draw_letter(p, index+40, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
-										/* wait for the data transmission to the led's to be ready */
-										while(!WS2812_TC);
-										/* send frame buffer to the leds */
-										sendbuf_WS2812();
-										/* roll through the text with XX ms period */
-										if(index == 0){
-											HAL_Delay(500);
-										}else{
-											HAL_Delay(100);
-										}
-									}
-									/* wait a bit to show the letters */
-									HAL_Delay(500);
-									isr_enable();
+									/* disable button irq */
+									set_button_irq(DISABLE);
+									/* write alarm setup on the display */
+									draw_string("alarm setup", 0, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+									/* enable button irq */
+									set_button_irq(ENABLE);
+		break;
+		case MODE_TIME_SET_ALARM_STYLE:
+									/* disable button irq */
+									set_button_irq(DISABLE);
+									/* write alarm setup on the display */
+									draw_string("choose alarm fx", 0, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+									/* enable button irq */
+									set_button_irq(ENABLE);
+		break;
+		case MODE_TIME_SET_SNOOZE:
+									/* disable button irq */
+									set_button_irq(DISABLE);
+									/* write alarm setup on the display */
+									draw_string("snooze setup", 0, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+									/* enable button irq */
+									set_button_irq(ENABLE);
+		break;
+		case MODE_TIME_LUX:
+									/* disable button irq */
+									set_button_irq(DISABLE);
+									/* write alarm setup on the display */
+									draw_string("lux mode", 0, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+									/* enable button irq */
+									set_button_irq(ENABLE);
 		break;
 	}
 }
@@ -1170,43 +254,43 @@ void draw_hh_mm(Time_Setup time, Alarmclock *alarmclock_param){
 	}
 
 	/* draw double point */
-	draw_number(doublepoint, (uint16_t)7, (uint8_t)0,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+	draw_number(':', (uint16_t)7, (uint8_t)0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 	if(time == HOURS){
 		/* draw numbers into display buffer */
 		/* number position h0 */
 		h0_x_offset = 0;
 		h0_y_offset = 0;
 		switch(h0){
-			case 0:	draw_number(zero, h0_x_offset, h0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 0:	draw_number('0', h0_x_offset, h0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 1:	draw_number(one, h0_x_offset, h0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 1:	draw_number('1', h0_x_offset, h0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 2:	draw_number(two, h0_x_offset, h0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 2:	draw_number('2', h0_x_offset, h0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
 		}
 		/* number position h1 */
 		h1_x_offset = 4;
 		h1_y_offset = 0;
 		switch(h1){
-			case 0:	draw_number(zero, h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 0:	draw_number('0', h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 1:	draw_number(one, h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 1:	draw_number('1', h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 2:	draw_number(two, h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 2:	draw_number('2', h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 3:	draw_number(three, h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 3:	draw_number('3', h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 4:	draw_number(four, h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 4:	draw_number('4', h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 5:	draw_number(five, h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 5:	draw_number('5', h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 6:	draw_number(six, h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 6:	draw_number('6', h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 7:	draw_number(seven, h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 7:	draw_number('7', h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 8:	draw_number(eight, h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 8:	draw_number('8', h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 9:	draw_number(nine, h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 9:	draw_number('9', h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
 		}
 	}else if(time == MINUTES){
@@ -1214,42 +298,42 @@ void draw_hh_mm(Time_Setup time, Alarmclock *alarmclock_param){
 		m0_x_offset = 10;
 		m0_y_offset = 0;
 		switch(m0){
-			case 0:	draw_number(zero, m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 0:	draw_number('0', m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 1:	draw_number(one, m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 1:	draw_number('1', m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 2:	draw_number(two, m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 2:	draw_number('2', m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 3:	draw_number(three, m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 3:	draw_number('3', m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 4:	draw_number(four, m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 4:	draw_number('4', m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 5:	draw_number(five, m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 5:	draw_number('5', m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
 		}
 		/* number position m1 */
 		m1_x_offset = 14;
 		m1_y_offset = 0;
 		switch(m1){
-			case 0:	draw_number(zero, m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 0:	draw_number('0', m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 1:	draw_number(one, m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 1:	draw_number('1', m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 2:	draw_number(two, m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 2:	draw_number('2', m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 3:	draw_number(three, m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 3:	draw_number('3', m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 4:	draw_number(four, m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 4:	draw_number('4', m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 5:	draw_number(five, m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 5:	draw_number('5', m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 6:	draw_number(six, m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 6:	draw_number('6', m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 7:	draw_number(seven, m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 7:	draw_number('7', m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 8:	draw_number(eight, m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 8:	draw_number('8', m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 9:	draw_number(nine, m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 9:	draw_number('9', m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
 		}
 	}else{
@@ -1295,19 +379,19 @@ void draw_time(Alarmclock *alarmclock_param){
 	}
 	switch(h0){
 		case 0:	if(h0_y_offset < 0){	//old number during time change effect shall running out of the screen
-					draw_number(two, h0_x_offset, h0_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+					draw_number('2', h0_x_offset, h0_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 				}
-				draw_number(zero, h0_x_offset, h0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('0', h0_x_offset, h0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 		break;
 		case 1:	if(h0_y_offset < 0){	//old number during time change effect shall running out of the screen
-					draw_number(zero, h0_x_offset, h0_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+					draw_number('0', h0_x_offset, h0_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 				}
-				draw_number(one, h0_x_offset, h0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('1', h0_x_offset, h0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 		break;
 		case 2:	if(h0_y_offset < 0){	//old number during time change effect shall running out of the screen
-					draw_number(one, h0_x_offset, h0_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+					draw_number('1', h0_x_offset, h0_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 				}
-				draw_number(two, h0_x_offset, h0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('2', h0_x_offset, h0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 		break;
 	}
 	/* number position h1 */
@@ -1328,61 +412,61 @@ void draw_time(Alarmclock *alarmclock_param){
 	}
 	switch(h1){
 		case 0:	if(h1_y_offset < 0){	//old number during time change effect shall running out of the screen
-					draw_number(nine, h1_x_offset, h1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+					draw_number('9', h1_x_offset, h1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 				}
-				draw_number(zero, h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('0', h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 		break;
 		case 1:	if(h1_y_offset < 0){	//old number during time change effect shall running out of the screen
-					draw_number(zero, h1_x_offset, h1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+					draw_number('0', h1_x_offset, h1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 				}
-				draw_number(one, h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('1', h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 		break;
 		case 2:	if(h1_y_offset < 0){	//old number during time change effect shall running out of the screen
-					draw_number(one, h1_x_offset, h1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+					draw_number('1', h1_x_offset, h1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 				}
-				draw_number(two, h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('2', h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 		break;
 		case 3:	if(h1_y_offset < 0){	//old number during time change effect shall running out of the screen
-					draw_number(two, h1_x_offset, h1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+					draw_number('2', h1_x_offset, h1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 				}
-				draw_number(three, h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('3', h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 		break;
 		case 4:	if(h1_y_offset < 0){	//old number during time change effect shall running out of the screen
-					draw_number(three, h1_x_offset, h1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+					draw_number('3', h1_x_offset, h1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 				}
-				draw_number(four, h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('4', h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 		break;
 		case 5:	if(h1_y_offset < 0){	//old number during time change effect shall running out of the screen
-					draw_number(four, h1_x_offset, h1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+					draw_number('4', h1_x_offset, h1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 				}
-				draw_number(five, h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('5', h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 		break;
 		case 6:	if(h1_y_offset < 0){	//old number during time change effect shall running out of the screen
-					draw_number(five, h1_x_offset, h1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+					draw_number('5', h1_x_offset, h1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 				}
-				draw_number(six, h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('6', h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 		break;
 		case 7:	if(h1_y_offset < 0){	//old number during time change effect shall running out of the screen
-					draw_number(six, h1_x_offset, h1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+					draw_number('6', h1_x_offset, h1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 				}
-				draw_number(seven, h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('7', h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 		break;
 		case 8:	if(h1_y_offset < 0){	//old number during time change effect shall running out of the screen
-					draw_number(seven, h1_x_offset, h1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+					draw_number('7', h1_x_offset, h1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 				}
-				draw_number(eight, h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('8', h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 		break;
 		case 9:	if(h1_y_offset < 0){	//old number during time change effect shall running out of the screen
-					draw_number(eight, h1_x_offset, h1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+					draw_number('8', h1_x_offset, h1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 				}
-				draw_number(nine, h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('9', h1_x_offset, h1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 		break;
 	}
 	/* second double point */
 	x_offset = 7;
 	y_offset = 0;
 	if(alarmclock_param->timestructure.Seconds%2){
-		draw_number(doublepoint, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+		draw_number(':', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 	}
 	/* number position m0 */
 	if(m0 != m0_old || init){
@@ -1401,34 +485,34 @@ void draw_time(Alarmclock *alarmclock_param){
 	}
 	switch(m0){
 	case 0:	if(m0_y_offset < 0){	//old number during time change effect shall running out of the screen
-				draw_number(five, m0_x_offset, m0_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('5', m0_x_offset, m0_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			}
-			draw_number(zero, m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			draw_number('0', m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 	break;
 	case 1:	if(m0_y_offset < 0){	//old number during time change effect shall running out of the screen
-				draw_number(zero, m0_x_offset, m0_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('0', m0_x_offset, m0_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			}
-			draw_number(one, m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			draw_number('1', m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 	break;
 	case 2:	if(m0_y_offset < 0){	//old number during time change effect shall running out of the screen
-				draw_number(one, m0_x_offset, m0_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('1', m0_x_offset, m0_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			}
-			draw_number(two, m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			draw_number('2', m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 	break;
 	case 3:	if(m0_y_offset < 0){	//old number during time change effect shall running out of the screen
-				draw_number(two, m0_x_offset, m0_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('2', m0_x_offset, m0_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			}
-			draw_number(three, m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			draw_number('3', m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 	break;
 	case 4:	if(m0_y_offset < 0){	//old number during time change effect shall running out of the screen
-				draw_number(three, m0_x_offset, m0_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('3', m0_x_offset, m0_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			}
-			draw_number(four, m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			draw_number('4', m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 	break;
 	case 5:	if(m0_y_offset < 0){	//old number during time change effect shall running out of the screen
-				draw_number(four, m0_x_offset, m0_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('4', m0_x_offset, m0_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			}
-			draw_number(five, m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			draw_number('5', m0_x_offset, m0_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 	break;
 	}
 	/* number position m1 */
@@ -1448,54 +532,54 @@ void draw_time(Alarmclock *alarmclock_param){
 	}
 	switch(m1){
 	case 0:	if(m1_y_offset < 0){	//old number during time change effect shall running out of the screen
-				draw_number(nine, m1_x_offset, m1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('9', m1_x_offset, m1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			}
-			draw_number(zero, m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			draw_number('0', m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 	break;
 	case 1:	if(m1_y_offset < 0){	//old number during time change effect shall running out of the screen
-				draw_number(zero, m1_x_offset, m1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('0', m1_x_offset, m1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			}
-			draw_number(one, m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			draw_number('1', m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 	break;
 	case 2:	if(m1_y_offset < 0){	//old number during time change effect shall running out of the screen
-				draw_number(one, m1_x_offset, m1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('1', m1_x_offset, m1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			}
-			draw_number(two, m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			draw_number('2', m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 	break;
 	case 3:	if(m1_y_offset < 0){	//old number during time change effect shall running out of the screen
-				draw_number(two, m1_x_offset, m1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('2', m1_x_offset, m1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			}
-			draw_number(three, m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			draw_number('3', m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 	break;
 	case 4:	if(m1_y_offset < 0){	//old number during time change effect shall running out of the screen
-				draw_number(three, m1_x_offset, m1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('3', m1_x_offset, m1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			}
-			draw_number(four, m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			draw_number('4', m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 	break;
 	case 5:	if(m1_y_offset < 0){	//old number during time change effect shall running out of the screen
-				draw_number(four, m1_x_offset, m1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('4', m1_x_offset, m1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			}
-			draw_number(five, m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			draw_number('5', m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 	break;
 	case 6:	if(m1_y_offset < 0){	//old number during time change effect shall running out of the screen
-				draw_number(five, m1_x_offset, m1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('5', m1_x_offset, m1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			}
-			draw_number(six, m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			draw_number('6', m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 	break;
 	case 7:	if(m1_y_offset < 0){	//old number during time change effect shall running out of the screen
-				draw_number(six, m1_x_offset, m1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('6', m1_x_offset, m1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			}
-			draw_number(seven, m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			draw_number('7', m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 	break;
 	case 8:	if(m1_y_offset < 0){	//old number during time change effect shall running out of the screen
-				draw_number(seven, m1_x_offset, m1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('7', m1_x_offset, m1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			}
-			draw_number(eight, m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			draw_number('8', m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 	break;
 	case 9:	if(m1_y_offset < 0){	//old number during time change effect shall running out of the screen
-				draw_number(eight, m1_x_offset, m1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+				draw_number('8', m1_x_offset, m1_y_offset+8,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			}
-			draw_number(nine, m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			draw_number('9', m1_x_offset, m1_y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 	break;
 	}
 	/* save values for time changing effects */
@@ -1638,6 +722,96 @@ void led_alarm_minute_minus(Alarmclock *alarmclock_param){
 }
 
 /**
+  * @brief  sets next alarm style
+  * @note   None
+  * @retval None
+  */
+void alarm_style_plus(Alarmclock *alarmclock_param){
+	if(alarmclock_param->alarm_style > 0 ){
+		alarmclock_param->alarm_style--;
+	}else{
+		alarmclock_param->alarm_style = 1;
+	}
+}
+
+/**
+  * @brief  sets alarm style before
+  * @note   None
+  * @retval None
+  */
+void alarm_style_minus(Alarmclock *alarmclock_param){
+	if(alarmclock_param->alarm_style < 1 ){
+		alarmclock_param->alarm_style++;
+	}else{
+		alarmclock_param->alarm_style = 0;
+	}
+}
+
+/**
+  * @brief  sets alarm style before
+  * @note   None
+  * @retval None
+  */
+void show_alarm_style(Alarmclock *alarmclock_param){
+	switch(alarmclock_param->alarm_style){
+		case FLASHING:	WS2812_display_flash(50, 3);
+		break;
+		case COLORFALL:	WS2812_display_colorfall();
+		break;
+	}
+}
+
+/**
+  * @brief  increase snooze
+  * @note   None
+  * @retval None
+  */
+void snooze_plus(Alarmclock *alarmclock_param){
+	if(alarmclock_param->snooze_duration > 5 ){
+		alarmclock_param->snooze_duration -= 5;
+	}else{
+		alarmclock_param->snooze_duration = 30;
+	}
+}
+
+/**
+  * @brief  decrease snooze
+  * @note   None
+  * @retval None
+  */
+void snooze_minus(Alarmclock *alarmclock_param){
+	if(alarmclock_param->snooze_duration < 30 ){
+		alarmclock_param->snooze_duration += 5;
+	}else{
+		alarmclock_param->snooze_duration = 5;
+	}
+}
+
+/**
+  * @brief  show recent snooze
+  * @note   None
+  * @retval None
+  */
+void draw_snooze(Alarmclock *alarmclock_param){
+	switch(alarmclock_param->snooze_duration){
+		case 0:		draw_string("no snooze", 0, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+		break;
+		case 5:		draw_string(" 5 m", 0, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+		break;
+		case 10:	draw_string("10 m", 0, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+		break;
+		case 15:	draw_string("15 m", 0, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+		break;
+		case 20:	draw_string("20 m", 0, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+		break;
+		case 25:	draw_string("25 m", 0, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+		break;
+		case 30:	draw_string("30 m", 0, 0, &alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+		break;
+	}
+}
+
+/**
   * @brief  Configure the current time, alarm time and date.
   * @param  None
   * @retval None
@@ -1675,8 +849,8 @@ void RTC_CalendarConfig(Alarmclock *alarmclock_param){
   * @param  None
   * @retval None
   */
-void RTC_AlarmEventCallback(){
-		buzzer_start();
+void RTC_AlarmEventCallback(Alarmclock *alarmclock_param){
+		buzzer_start(alarmclock_param);
 }
 
 /**
@@ -1687,7 +861,7 @@ void RTC_AlarmEventCallback(){
 void increment_mode(Alarmclock *alarmclock_param){
 	/* reset tick counter, for clean setup blinking of the numbers */
 	HAL_SetTick(1);
-	if(alarmclock_param->mode < 4){
+	if(alarmclock_param->mode < mode_count){
 		alarmclock_param->mode++;
 	}else{
 		alarmclock_param->mode = 0;
@@ -1695,10 +869,14 @@ void increment_mode(Alarmclock *alarmclock_param){
 	/* only in the clock mode, the alarm shall work */
 	if(alarmclock_param->mode != MODE_TIME_CLOCK){
 		/* disable the alarm interrupt */
-		HAL_RTC_DeactivateAlarm(&RTC_Handle, alarmclock_param->alarmstructure.Alarm);
+		set_alarm_irq(DISABLE, alarmclock_param);
+	}else{
+		set_alarm_irq(ENABLE, alarmclock_param);
 	}
 	/* draw mode change on the clock display */
+	set_button_irq(DISABLE);
 	draw_mode(alarmclock_param);
+	set_button_irq(ENABLE);
 }
 
 /**
@@ -1725,7 +903,7 @@ void refresh_clock_display(Alarmclock *alarmclock_param){
 void setup_clock_blinking(Alarmclock *alarmclock_param){
 	/* erase frame buffer */
 	WS2812_clear_buffer();
-	/* get recent hal tick value */
+	/* get recent hal tick value for blinking the numbers */
 	hal_tick_temp = HAL_GetTick();
 	/* write setup time into frame buffer */
 	if(alarmclock_param->mode == MODE_TIME_SET_CLOCK_h || alarmclock_param->mode == MODE_TIME_SET_ALARM_h){
@@ -1746,19 +924,15 @@ void setup_clock_blinking(Alarmclock *alarmclock_param){
 }
 
 /**
-  * @brief  this function checks alarm switch position and activates or deactivates it
+  * @brief  this function checks alarm switch position
   * @param  None
   * @retval None
   */
-void read_alarm_switch(Alarmclock *alarmclock_param){
+uint8_t read_alarm_switch(void){
 	if(GPIOB->IDR &= (uint32_t)SWITCH_ALARM){
-		/* disable the alarm interrupt */
-		HAL_RTC_DeactivateAlarm(&RTC_Handle, alarmclock_param->alarmstructure.Alarm);
+		return 0;
 	}else{
-		/* Enable and set RTC interrupt for alarm function */
-		HAL_RTC_SetAlarm_IT(&RTC_Handle, &alarmclock_param->alarmstructure, RTC_FORMAT_BIN);
-		HAL_NVIC_SetPriority(RTC_Alarm_IRQn, 1, 0);
-		HAL_NVIC_EnableIRQ(RTC_Alarm_IRQn);
+		return 1;
 	}
 }
 
@@ -1788,6 +962,10 @@ void get_clock_preferences(Alarmclock *alarmclock_param){
 		  	alarmclock_param->alarmstructure.AlarmTime.Hours 	= 0x06;
 		  	alarmclock_param->alarmstructure.AlarmTime.Minutes 	= 0x00;
 		  	alarmclock_param->alarmstructure.AlarmTime.Seconds 	= 0x00;
+		  	/* init default snooze duration */
+		  	alarmclock_param->snooze_duration = 5;
+		  	/* init default alarm style */
+		  	alarmclock_param->alarm_style = FLASHING;
 		    /* safe initial preferences */
 		    set_clock_preferences(alarmclock_param);
 	  }else{
@@ -1842,6 +1020,20 @@ void get_clock_preferences(Alarmclock *alarmclock_param){
 
 		  /* Enable and set RTC interrupt for alarm function */
 		  alarmclock_param->alarmstructure.AlarmTime.Seconds = 0x00;
+
+		  /* get alarm style */
+		  backupregister = (uint32_t)BKP_BASE;
+		  backupregister += (9 * 4U);
+
+		  alarmclock_param->alarm_style = (*(__IO uint32_t *)(backupregister)) & (uint32_t)backup_register_mask;
+		  backupregister = 0U;
+
+		  /* get snooze duration */
+		  backupregister = (uint32_t)BKP_BASE;
+		  backupregister += (10 * 4U);
+
+		  alarmclock_param->snooze_duration = (*(__IO uint32_t *)(backupregister)) & (uint32_t)backup_register_mask;
+		  backupregister = 0U;
 	  }
 }
 
@@ -1902,6 +1094,20 @@ void set_clock_preferences(Alarmclock *alarmclock_param){
 
 	  *(__IO uint32_t *) tmp = alarmclock_param->alarmstructure.AlarmTime.Seconds & backup_register_mask;
 	  tmp = 0U;
+
+	  /* set alarm style */
+	  tmp = (uint32_t)BKP_BASE;
+	  tmp += (9 * 4U);
+
+	  *(__IO uint32_t *) tmp = alarmclock_param->alarm_style & backup_register_mask;
+	  tmp = 0U;
+
+	  /* set snooze duration */
+	  tmp = (uint32_t)BKP_BASE;
+	  tmp += (10 * 4U);
+
+	  *(__IO uint32_t *) tmp = alarmclock_param->snooze_duration & backup_register_mask;
+	  tmp = 0U;
 }
 
 /**
@@ -1910,14 +1116,45 @@ void set_clock_preferences(Alarmclock *alarmclock_param){
   * @retval None
   */
 void increment_clock_color(Alarmclock *alarmclock_param){
+	/* variables for the next color */
+	uint8_t new_red, new_green, new_blue;
+
+	/* get the new color with the incremented color index */
 	if(alarmclock_param->color_index < 3){
 		alarmclock_param->color_index++;
 	}else{
 		alarmclock_param->color_index = 0;
 	}
-	alarmclock_param->red = color_pattern[alarmclock_param->color_index][0];
-	alarmclock_param->green = color_pattern[alarmclock_param->color_index][1];
-	alarmclock_param->blue = color_pattern[alarmclock_param->color_index][2];
+
+	/* the new colors */
+	new_red = color_pattern[alarmclock_param->color_index][0];
+	new_green = color_pattern[alarmclock_param->color_index][1];
+	new_blue = color_pattern[alarmclock_param->color_index][2];
+
+	/* color loop effect */
+	while(alarmclock_param->red != new_red || alarmclock_param->green != new_green || alarmclock_param->blue != new_blue){
+		/* red */
+		if(alarmclock_param->red < new_red){
+			alarmclock_param->red++;
+		}else if(alarmclock_param->red > new_red){
+			alarmclock_param->red--;
+		}
+		/* green */
+		if(alarmclock_param->green < new_green){
+			alarmclock_param->green++;
+		}else if(alarmclock_param->green > new_green){
+			alarmclock_param->green--;
+		}
+		/* blue */
+		if(alarmclock_param->blue < new_blue){
+			alarmclock_param->blue++;
+		}else if(alarmclock_param->blue > new_blue){
+			alarmclock_param->blue--;
+		}
+		/* refresh clock display */
+		refresh_clock_display(alarmclock_param);
+		HAL_Delay(50);
+	}
 }
 
 /**
@@ -1926,14 +1163,44 @@ void increment_clock_color(Alarmclock *alarmclock_param){
   * @retval None
   */
 void decrement_clock_color(Alarmclock *alarmclock_param){
+	/* variables for the next color */
+	uint8_t new_red, new_green, new_blue;
+
 	if(alarmclock_param->color_index > 0){
 		alarmclock_param->color_index--;
 	}else{
 		alarmclock_param->color_index = 3;
 	}
-	alarmclock_param->red = color_pattern[alarmclock_param->color_index][0];
-	alarmclock_param->green = color_pattern[alarmclock_param->color_index][1];
-	alarmclock_param->blue = color_pattern[alarmclock_param->color_index][2];
+
+	/* the new colors */
+	new_red = color_pattern[alarmclock_param->color_index][0];
+	new_green = color_pattern[alarmclock_param->color_index][1];
+	new_blue = color_pattern[alarmclock_param->color_index][2];
+
+	/* color loop effect */
+	while(alarmclock_param->red != new_red || alarmclock_param->green != new_green || alarmclock_param->blue != new_blue){
+		/* red */
+		if(alarmclock_param->red < new_red){
+			alarmclock_param->red++;
+		}else if(alarmclock_param->red > new_red){
+			alarmclock_param->red--;
+		}
+		/* green */
+		if(alarmclock_param->green < new_green){
+			alarmclock_param->green++;
+		}else if(alarmclock_param->green > new_green){
+			alarmclock_param->green--;
+		}
+		/* blue */
+		if(alarmclock_param->blue < new_blue){
+			alarmclock_param->blue++;
+		}else if(alarmclock_param->blue > new_blue){
+			alarmclock_param->blue--;
+		}
+		/* refresh clock display */
+		refresh_clock_display(alarmclock_param);
+		HAL_Delay(50);
+	}
 }
 
 /**
@@ -1952,6 +1219,29 @@ void init_clock(Alarmclock *alarmclock_param){
 	HAL_RTC_SetAlarm_IT(&RTC_Handle, &alarmclock_param->alarmstructure, RTC_FORMAT_BIN);
 	HAL_NVIC_SetPriority(RTC_Alarm_IRQn, 1, 0);
 	HAL_NVIC_EnableIRQ(RTC_Alarm_IRQn);
+}
+
+/**
+  * @brief  enables/disables all alarm it
+  * @param  SET/RESET
+  * @retval None
+  */
+void set_alarm_irq(FunctionalState alarm_irq, Alarmclock *alarmclock_param){
+	if(alarm_irq != DISABLE){
+		/* enable the alarm if it is still disabled */
+		if(!__HAL_RTC_ALARM_GET_IT_SOURCE(&RTC_Handle, RTC_IT_ALRA)){
+			/* rtc interrupt */
+			HAL_RTC_SetAlarm_IT(&RTC_Handle, &alarmclock_param->alarmstructure, RTC_FORMAT_BIN);
+			HAL_NVIC_SetPriority(RTC_Alarm_IRQn, 1, 0);
+			HAL_NVIC_EnableIRQ(RTC_Alarm_IRQn);
+		}
+	}else{
+		/* disable the alarm interrupt if alarm is still enabled*/
+		if(__HAL_RTC_ALARM_GET_IT_SOURCE(&RTC_Handle, RTC_IT_ALRA)){
+			/* rtc interrupt */
+			HAL_RTC_DeactivateAlarm(&RTC_Handle, alarmclock_param->alarmstructure.Alarm);
+		}
+	}
 }
 
 /**
@@ -2010,29 +1300,18 @@ void HAL_RTC_MspInit(RTC_HandleTypeDef *hrtc){
   */
 void draw_lux(Alarmclock *alarmclock_param){
 		uint32_t adc0,adc1,adc2,adc3,x_offset,y_offset;
-		uint16_t ambientlight_factor;
+		uint16_t adc_avr;
+
+		adc_avr = get_avr_lux();
 
 		/* process hours */
-		adc0 = adc_raw % 10;
-		adc1 = adc_raw / 10;
+		adc0 = adc_avr % 10;
+		adc1 = adc_avr / 10;
 		adc1 = adc1 % 10;
-		adc2 = adc_raw /100;
+		adc2 = adc_avr /100;
 		adc2 = adc2 % 10;
-		adc3 = adc_raw /1000;
+		adc3 = adc_avr /1000;
 		adc3 = adc3 % 10;
-
-		/* divide by 4 */
-		ambientlight_factor = adc_raw >> 2;
-		//ambientlight_factor = ambientlight_factor * 0x11;
-
-		if(adc_raw < 5){
-			ambientlight_factor = 1;
-		}else{
-			ambientlight_factor = 8;
-		}
-		alarmclock_param->red = ambientlight_factor * 0x11;
-		alarmclock_param->green = ambientlight_factor * 0x11;
-		alarmclock_param->blue = ambientlight_factor * 0x11;
 
 		/* erase frame buffer */
 		WS2812_clear_buffer();
@@ -2040,97 +1319,97 @@ void draw_lux(Alarmclock *alarmclock_param){
 		x_offset = 14;
 		y_offset = 0;
 		switch(adc0){
-			case 0:	draw_number(zero, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 0:	draw_number('0', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 1:	draw_number(one, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 1:	draw_number('1', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 2:	draw_number(two, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 2:	draw_number('2', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 3:	draw_number(three, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 3:	draw_number('3', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 4:	draw_number(four, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 4:	draw_number('4', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 5:	draw_number(five, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 5:	draw_number('5', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 6:	draw_number(six, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 6:	draw_number('6', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 7:	draw_number(seven, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 7:	draw_number('7', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 8:	draw_number(eight, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 8:	draw_number('8', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 9:	draw_number(nine, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 9:	draw_number('9', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
 		}
 		x_offset = 10;
 		y_offset = 0;
 		switch(adc1){
-			case 0:	draw_number(zero, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 0:	draw_number('0', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 1:	draw_number(one, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 1:	draw_number('1', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 2:	draw_number(two, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 2:	draw_number('2', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 3:	draw_number(three, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 3:	draw_number('3', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 4:	draw_number(four, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 4:	draw_number('4', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 5:	draw_number(five, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 5:	draw_number('5', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 6:	draw_number(six, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 6:	draw_number('6', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 7:	draw_number(seven, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 7:	draw_number('7', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 8:	draw_number(eight, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 8:	draw_number('8', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 9:	draw_number(nine, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 9:	draw_number('9', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
 		}
 		x_offset = 6;
 		y_offset = 0;
 		switch(adc2){
-			case 0:	draw_number(zero, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 0:	draw_number('0', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 1:	draw_number(one, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 1:	draw_number('1', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 2:	draw_number(two, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 2:	draw_number('2', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 3:	draw_number(three, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 3:	draw_number('3', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 4:	draw_number(four, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 4:	draw_number('4', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 5:	draw_number(five, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 5:	draw_number('5', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 6:	draw_number(six, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 6:	draw_number('6', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 7:	draw_number(seven, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 7:	draw_number('7', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 8:	draw_number(eight, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 8:	draw_number('8', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 9:	draw_number(nine, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 9:	draw_number('9', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
 		}
 		x_offset = 2;
 		y_offset = 0;
 		switch(adc3){
-			case 0:	draw_number(zero, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 0:	draw_number('0', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 1:	draw_number(one, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 1:	draw_number('1', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 2:	draw_number(two, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 2:	draw_number('2', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 3:	draw_number(three, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 3:	draw_number('3', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 4:	draw_number(four, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 4:	draw_number('4', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 5:	draw_number(five, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 5:	draw_number('5', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 6:	draw_number(six, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 6:	draw_number('6', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 7:	draw_number(seven, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 7:	draw_number('7', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 8:	draw_number(eight, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 8:	draw_number('8', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
-			case 9:	draw_number(nine, x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
+			case 9:	draw_number('9', x_offset, y_offset,&alarmclock_param->red, &alarmclock_param->green, &alarmclock_param->blue, alarmclock_param->ambient_light_factor);
 			break;
 		}
 		/* wait for the data transmission to the led's to be ready */

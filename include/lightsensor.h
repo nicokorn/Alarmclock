@@ -25,6 +25,7 @@ void stop_lightsensor_adc_conversion(void);
 void get_lightsensor_adc_conversion(uint32_t *adc_conversion);
 void init_dma_lightsensor();
 void init_timer_lightsensor(void);
-void init_filter();
+void init_filter(void);
+uint16_t get_avr_lux(void);
 
 #endif

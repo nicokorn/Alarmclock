@@ -5,9 +5,7 @@ Firmware code for an alarmclock. The alarmclock works with a custom made STM32f1
 <body>
 
 <h2>Pictures/vids of the alarmclock</h2>
-<iframe width="420" height="315"
-src="https://youtu.be/x9_2BwpDyuA">
-</iframe>
+Short demo on youtube: https://youtu.be/x9_2BwpDyuA
 <img src="https://github.com/nicokorn/Alarmclock/blob/master/pictures/image_1.png" alt="Alarmclock1">
 <img src="https://github.com/nicokorn/Alarmclock/blob/master/pictures/image_2.jpg" alt="Alarmclock2">
 <img src="https://github.com/nicokorn/Alarmclock/blob/master/pictures/image_3.jpg" alt="Alarmclock3">
